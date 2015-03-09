@@ -1,4 +1,4 @@
-
+CFLAGS += -std=c99
 hipack_PATH ?= .
 hipack_OBJS = ${hipack_PATH}/hipack-parser.o
 hipack = ${hipack_PATH}/libhipack.a

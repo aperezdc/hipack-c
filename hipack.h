@@ -9,6 +9,7 @@
 #define HIPACK_H
 
 #include <stdio.h>
+#include <stdint.h>
 
 extern int hipack_read (FILE* fp);
 

@@ -8,7 +8,7 @@
 #include "hipack.h"
 #include <assert.h>
 #include <string.h>
-#include <stdio.h>
+#include <stdbool.h>
 
 
 enum status {
@@ -42,7 +42,7 @@ static void parse_value(P, S);
 static void parse_keyval_items (P, int eos, S);
 
 
-static __inline__ int
+static inline int
 is_hipack_whitespace (int ch)
 {
     switch (ch) {
@@ -58,7 +58,7 @@ is_hipack_whitespace (int ch)
 
 
 
-static __inline__ int
+static inline int
 xdigit_to_int (int xdigit)
 {
     assert ((xdigit >= '0' && xdigit <= '9') ||
@@ -88,7 +88,7 @@ xdigit_to_int (int xdigit)
 
 
 
-static __inline__ void
+static inline void
 nextchar (P, S)
 {
     do {
@@ -116,7 +116,7 @@ nextchar (P, S)
 }
 
 
-static __inline__ void
+static inline void
 skipwhite (P, S)
 {
     while (p->look != EOF && is_hipack_whitespace (p->look)) {
@@ -128,10 +128,11 @@ skipwhite (P, S)
 }
 
 
-static __inline__ void
+static inline void
 matchchars (P, const char *chars, S)
 {
     assert (chars != NULL);
+
     while (*chars) {
         if (p->look == EOF) {
             *status = ferror (p->fp) ? kStatusIoError : kStatusEof;
@@ -147,7 +148,7 @@ matchchars (P, const char *chars, S)
 }
 
 
-static __inline__ void
+static inline void
 matchchar (P, int ch, const char *errmsg, S)
 {
     if (p->look == ch) {
@@ -212,11 +213,10 @@ parse_list (P, S)
 {
     matchchar (p, '[', NULL, CHECK_OK);
     skipwhite (p, CHECK_OK);
-    int got_whitespace;
 
     while (p->look != ']') {
         parse_value (p, CHECK_OK);
-        got_whitespace = is_hipack_whitespace (p->look);
+        bool got_whitespace = is_hipack_whitespace (p->look);
         skipwhite (p, CHECK_OK);
 
         /* There must either a comma or whitespace after the value. */
@@ -342,14 +342,18 @@ parse_message (P, S)
 int
 hipack_read (FILE *fp)
 {
-    status_t status = kStatusOk;
-    struct parser p;
     assert (fp);
-    memset (&p, 0x00, sizeof p);
-    p.fp = fp;
-    p.line = 1;
+
+    status_t status = kStatusOk;
+    struct parser p = {
+        .fp = fp,
+        .line = 1,
+        0,
+    };
+
     parse_message (&p, &status);
     p.fp = NULL;
+
     return 0;
 }
 
