@@ -21,5 +21,7 @@ hipack-tools: \
 ${hipack_PATH}/tools/hipack-parse: \
 	${hipack_PATH}/tools/hipack-parse.o ${hipack}
 
+hipack-check: ${hipack_PATH}/tools/hipack-parse
+	@${hipack_PATH}/tools/run-tests
 
-.PHONY: hipack hipack-objs hipack-tools
+.PHONY: hipack hipack-objs hipack-tools hipack-check
