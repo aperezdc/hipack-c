@@ -3,7 +3,6 @@ empty-no-colon { }
 empty-no-spaces: {}
 empty-no-spaces-no-colon {}
 empty-no-space-after-colon:{}
-empty-no-space-after-key{}
 single-item: { item: True }
 single-item-dangling-comma: { item: True, }
 multiple-items: { item1: True, Item2: True }

@@ -129,7 +129,10 @@ hipack_value_free (hipack_value_t *value)
 }
 
 
-extern hipack_dict_t* hipack_read (FILE* fp);
+extern hipack_dict_t* hipack_read (FILE        *fp,
+                                   const char **error,
+                                   unsigned    *line,
+                                   unsigned    *column);
 
 
 #endif /* !HIPACK_H */

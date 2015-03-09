@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
 
 
 enum status {
@@ -42,7 +43,7 @@ struct parser {
 #define DUMMY_VALUE ((hipack_value_t) { .type = HIPACK_BOOL })
 
 
-static hipack_value_t parse_value(P, S);
+static hipack_value_t parse_value (P, S);
 static hipack_dict_t* parse_keyval_items (P, int eos, S);
 
 
@@ -60,6 +61,34 @@ is_hipack_whitespace (int ch)
     }
 }
 
+
+static inline bool
+is_number_char (int ch)
+{
+    switch (ch) {
+        case '.': return true;
+        case '+': return true;
+        case '-': return true;
+        case '0': return true;
+        case '1': return true;
+        case '2': return true;
+        case '3': return true;
+        case '4': return true;
+        case '5': return true;
+        case '6': return true;
+        case '7': return true;
+        case '8': return true;
+        case '9': return true;
+        case 'a': case 'A': return true;
+        case 'b': case 'B': return true;
+        case 'c': case 'C': return true;
+        case 'd': case 'D': return true;
+        case 'e': case 'E': return true;
+        case 'f': case 'F': return true;
+        default:
+            return false;
+    }
+}
 
 
 static inline int
@@ -127,26 +156,6 @@ skipwhite (P, S)
 
     if (p->look == EOF && ferror (p->fp))
         *status = kStatusIoError;
-}
-
-
-static inline void
-matchchars (P, const char *chars, S)
-{
-    assert (chars != NULL);
-
-    while (*chars) {
-        if (p->look == EOF) {
-            *status = ferror (p->fp) ? kStatusIoError : kStatusEof;
-            return;
-        }
-        if (p->look != *chars) {
-            *status = kStatusError;
-            return;
-        }
-        p->look = fgetc (p->fp);
-        chars++;
-    }
 }
 
 
@@ -313,6 +322,7 @@ parse_dict (P, S)
 {
     hipack_dict_t *dict = NULL;
     matchchar (p, '{', NULL, CHECK_OK);
+    skipwhite (p, CHECK_OK);
     dict = parse_keyval_items (p, '}', CHECK_OK);
     matchchar (p, '}', "unterminated dict value", CHECK_OK);
     return (hipack_value_t) { .type = HIPACK_DICT, .v_dict = dict };
@@ -326,23 +336,22 @@ error:
 static hipack_value_t
 parse_bool (P, S)
 {
-    const char *match = NULL;
-    bool retval = false;
-
-    switch (p->look) {
-        case 'T': match = "True"; retval = true; break;
-        case 't': match = "true"; retval = true; break;
-        case 'F': match = "False"; break;
-        case 'f': match = "false"; break;
+    if (p->look == 'T' || p->look == 't') {
+        nextchar (p, CHECK_OK);
+        matchchar (p, 'r', NULL, CHECK_OK);
+        matchchar (p, 'u', NULL, CHECK_OK);
+        matchchar (p, 'e', NULL, CHECK_OK);
+        return (hipack_value_t) { .type = HIPACK_BOOL, .v_bool = true };
+    } else if (p->look == 'F' || p->look == 'f') {
+        nextchar (p, CHECK_OK);
+        matchchar (p, 'a', NULL, CHECK_OK);
+        matchchar (p, 'l', NULL, CHECK_OK);
+        matchchar (p, 's', NULL, CHECK_OK);
+        matchchar (p, 'e', NULL, CHECK_OK);
+        return (hipack_value_t) { .type = HIPACK_BOOL, .v_bool = false };
     }
 
-    if (match) {
-        matchchars (p, match, status);
-        if (*status == kStatusOk) {
-            return (hipack_value_t) { .type = HIPACK_BOOL, .v_bool = retval };
-        }
-    }
-
+error:
     p->error = "boolean value expected (true/false)";
     return DUMMY_VALUE;
 }
@@ -351,7 +360,126 @@ parse_bool (P, S)
 static hipack_value_t
 parse_number (P, S)
 {
-    /* TODO */
+    hipack_string_t *hstr = NULL;
+    uint32_t alloc_size = 0;
+    uint32_t size = 0;
+    hipack_value_t result;
+
+#define SAVE_LOOK( ) \
+    hstr = string_resize (hstr, &alloc_size, size + 1); \
+    hstr->data[size++] = p->look
+
+    /* Optional sign. */
+    bool has_sign = false;
+    if (p->look == '-' || p->look == '+') {
+        SAVE_LOOK ();
+        has_sign = true;
+        nextchar (p, CHECK_OK);
+    }
+
+    /* Octal/hexadecimal numbers. */
+    bool is_octal = false;
+    bool is_hex = false;
+    if (p->look == '0') {
+        SAVE_LOOK ();
+        nextchar (p, CHECK_OK);
+        if (p->look == 'x' || p->look == 'X') {
+            SAVE_LOOK ();
+            nextchar (p, CHECK_OK);
+            is_hex = true;
+        } else {
+            is_octal = true;
+        }
+    }
+
+    /* Read the rest of the number. */
+    bool dot_seen = false;
+    bool exp_seen = false;
+    while (p->look != EOF && is_number_char (p->look)) {
+        if (!is_hex && (p->look == 'e' || p->look == 'E')) {
+            if (exp_seen) {
+                *status = kStatusError;
+                goto error;
+            }
+            exp_seen = true;
+            /* Handle the optional sign of the exponent. */
+            SAVE_LOOK ();
+            nextchar (p, CHECK_OK);
+            if (p->look == '-' || p->look == '+') {
+                SAVE_LOOK ();
+                nextchar (p, CHECK_OK);
+            }
+        } else {
+            if (p->look == '.') {
+                if (dot_seen || is_hex || is_octal) {
+                    *status = kStatusError;
+                    goto error;
+                }
+                dot_seen = true;
+            }
+            SAVE_LOOK ();
+            nextchar (p, CHECK_OK);
+        }
+    }
+
+    if (!size) {
+        *status = kStatusError;
+        goto error;
+    }
+
+    /* Zero-terminate, to use with the libc conversion functions. */
+    hstr = string_resize (hstr, &alloc_size, size + 1);
+    hstr->data[size++] = '\0';
+
+    char *endptr = NULL;
+    if (is_hex) {
+        assert (!is_octal);
+        if (exp_seen || dot_seen) {
+            *status = kStatusError;
+            goto error;
+        }
+        char *endptr = NULL;
+        long v = strtol ((const char*) hstr->data, &endptr, 16);
+        /* TODO: Check for overflow. */
+        result.type = HIPACK_INTEGER;
+        result.v_integer = (int32_t) v;
+    } else if (is_octal) {
+        assert (!is_hex);
+        if (exp_seen || dot_seen) {
+            *status = kStatusError;
+            goto error;
+        }
+        long v = strtol ((const char*) hstr->data, &endptr, 8);
+        /* TODO: Check for overflow. */
+        result.type = HIPACK_INTEGER;
+        result.v_integer = (int32_t) v;
+    } else if (dot_seen || exp_seen) {
+        assert (!is_hex);
+        assert (!is_octal);
+        result.type = HIPACK_FLOAT;
+        result.v_float = strtod ((const char*) hstr->data, &endptr);
+    } else {
+        assert (!is_hex);
+        assert (!is_octal);
+        assert (!exp_seen);
+        assert (!dot_seen);
+        long v = strtol ((const char*) hstr->data, &endptr, 10);
+        /* TODO: Check for overflow. */
+        result.type = HIPACK_INTEGER;
+        result.v_integer = (int32_t) v;
+    }
+
+    if (endptr && *endptr != '\0') {
+        *status = kStatusError;
+        goto error;
+    }
+
+    hipack_string_free (hstr);
+    return result;
+
+error:
+    p->error = "invalid numeric value";
+    hipack_string_free (hstr);
     return DUMMY_VALUE;
 }
 
@@ -465,7 +593,10 @@ error:
 
 
 hipack_dict_t*
-hipack_read (FILE *fp)
+hipack_read (FILE        *fp,
+             const char **error,
+             unsigned    *line,
+             unsigned    *column)
 {
     assert (fp);
 
@@ -477,7 +608,28 @@ hipack_read (FILE *fp)
     };
 
     hipack_dict_t *result = parse_message (&p, &status);
-    /* TODO: Some post-processing of "status" */
+    switch (status) {
+        case kStatusOk:
+            assert (result);
+            break;
+        case kStatusError:
+            assert (!result);
+            break;
+        case kStatusIoError:
+            assert (ferror (p.fp));
+            p.error = strerror (errno);
+            hipack_dict_free (result);
+            result = NULL;
+            break;
+        case kStatusEof:
+            assert (feof (p.fp));
+            break;
+    }
+
+    if (error) *error   = p.error;
+    if (line) *line     = p.line;
+    if (column) *column = p.column;
+
     return result;
 }
 

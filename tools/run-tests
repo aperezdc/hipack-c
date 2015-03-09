@@ -31,15 +31,26 @@ for name in "${tests[@]}" ; do
 		${#fails[@]} \
 		"${name}"
 
+	if [[ ${name} = fail-* ]] ; then
+		expect_fail=true
+	else
+		expect_fail=false
+	fi
+
 	if "${srcdir}/tools/hipack-parse" "${srcdir}/test/${name}.hi" \
 		2> "/tmp/hipack-$$-${name}.err" > /dev/null
 	then
+		if ${expect_fail} ; then passed=false ; else passed=true ; fi
+	else
+		if ${expect_fail} ; then passed=true ; else passed=false ; fi
+	fi
+
+	if ${passed} ; then
 		okays=( "${okays[@]}" "${name}" )
 	else
 		fails=( "${fails[@]}" "${name}" )
 		if [[ -s /tmp/hipack-$$-${name}.err ]] ; then
 			cat "/tmp/hipack-$$-${name}.err"
-			echo
 		fi
 	fi
 	rm -f "/tmp/hipack-$$-${name}.err"

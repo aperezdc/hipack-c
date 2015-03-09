@@ -27,8 +27,12 @@ main (int argc, const char *argv[])
     }
 
     int retcode = EXIT_SUCCESS;
-    hipack_dict_t *message = hipack_read (fp);
+    const char *error = NULL;
+    unsigned line, column;
+    hipack_dict_t *message = hipack_read (fp, &error, &line, &column);
     if (!message) {
+        fprintf (stderr, "line %u, column %u: %s\n",
+                 line, column, error);
         retcode = EXIT_FAILURE;
     }
     hipack_dict_free (message);
