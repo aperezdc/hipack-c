@@ -1,3 +1,4 @@
 *.o
 *.a
 .*.sw[op]
+tools/hipack-parse
