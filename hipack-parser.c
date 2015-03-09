@@ -233,7 +233,7 @@ parse_string (P, S)
 
     matchchar (p, '"', NULL, CHECK_OK);
 
-    for (ch = fgetc (p->fp); ch != EOF; ch = fgetc (p->fp)) {
+    for (ch = p->look; ch != EOF && ch != '"'; ch = fgetc (p->fp)) {
         /* Handle escapes. */
         if (ch == '\\') {
             switch ((ch = fgetc (p->fp))) {
@@ -259,6 +259,7 @@ parse_string (P, S)
         hstr = string_resize (hstr, &alloc_size, size + 1);
         hstr->data[size++] = ch;
     }
+    p->look = ch;
 
     matchchar (p, '"', "unterminated  string value", CHECK_OK);
     return (hipack_value_t) {
