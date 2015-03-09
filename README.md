@@ -7,7 +7,7 @@ Features:
 * Reference implementation of the [current stable HiPack
   specification](https://github.com/aperezdc/hipack/blob/gh-pages/spec.rst).
 * Straightforward implementation.
-* Portable to any C99, or C++ compiler.
+* Written in portable C99.
 * Minimal dependencies.
 
 
