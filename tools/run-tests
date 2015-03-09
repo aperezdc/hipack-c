@@ -43,7 +43,6 @@ for name in "${tests[@]}" ; do
 		fi
 	fi
 	rm -f "/tmp/hipack-$$-${name}.err"
-	sleep 1
 done
 echo
 
