@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 
 enum status {
@@ -32,17 +34,21 @@ struct parser {
 #define S status_t *status
 
 #define CHECK_OK status); \
-    if (*status != kStatusOk) return; \
+    if (*status != kStatusOk) goto error; \
     ((void) 0
 #define DUMMY ) /* Makes autoindentation work. */
 #undef DUMMY
 
-
-static void parse_value(P, S);
-static void parse_keyval_items (P, int eos, S);
+#define DUMMY_VALUE ((hipack_value_t) { .type = HIPACK_BOOL })
 
 
-static inline int
+static hipack_value_t parse_value(P, S);
+static hipack_dict_t* parse_keyval_items (P, int eos, S);
+
+static hipack_string_t empty_string = { .size = 0 };
+
+
+static inline bool
 is_hipack_whitespace (int ch)
 {
     switch (ch) {
@@ -50,9 +56,9 @@ is_hipack_whitespace (int ch)
         case 0x0A: /* New line. */
         case 0x0D: /* Carriage return. */
         case 0x20: /* Space. */
-            return 1;
+            return true;
         default:
-            return 0;
+            return false;
     }
 }
 
@@ -110,21 +116,19 @@ nextchar (P, S)
         }
     } while (p->look != EOF && p->look == '#');
 
-    *status = (p->look == EOF)
-        ? (ferror (p->fp) ? kStatusIoError : kStatusEof)
-        : kStatusOk;
+    if (p->look == EOF && ferror (p->fp))
+        *status = kStatusIoError;
 }
 
 
 static inline void
 skipwhite (P, S)
 {
-    while (p->look != EOF && is_hipack_whitespace (p->look)) {
-        nextchar (p, CHECK_OK);
-    }
-    *status = (p->look == EOF)
-        ? (ferror (p->fp) ? kStatusIoError : kStatusEof)
-        : kStatusOk;
+    while (p->look != EOF && is_hipack_whitespace (p->look))
+        nextchar (p, status);
+
+    if (p->look == EOF && ferror (p->fp))
+        *status = kStatusIoError;
 }
 
 
@@ -158,24 +162,76 @@ matchchar (P, int ch, const char *errmsg, S)
 
     p->error = errmsg ? errmsg : "unexpected input";
     *status = kStatusError;
+
+error:
+    return;
 }
 
 
-static void
+#ifndef HIPACK_STRING_CHUNK_SIZE
+#define HIPACK_STRING_CHUNK_SIZE 32
+#endif /* !HIPACK_STRING_CHUNK_SIZE */
+
+#ifndef HIPACK_STRING_POW_SIZE
+#define HIPACK_STRING_POW_SIZE 512
+#endif /* !HIPACK_STRING_POW_SIZE */
+
+
+static hipack_string_t*
+string_resize (hipack_string_t *hstr, uint32_t *alloc, uint32_t size)
+{
+    if (size) {
+        uint32_t new_size = HIPACK_STRING_CHUNK_SIZE *
+            ((size / HIPACK_STRING_CHUNK_SIZE) + 1);
+        if (new_size < size) {
+            new_size = size;
+        }
+        if (new_size != *alloc) {
+            *alloc = new_size;
+            new_size = sizeof (hipack_string_t) + new_size * sizeof (uint8_t);
+            hstr = (hipack_string_t*)
+                (hstr ? realloc (hstr, new_size) : malloc (new_size));
+        }
+        hstr->size = size;
+    } else {
+        *alloc = 0;
+        free (hstr);
+        hstr = NULL;
+    }
+    return hstr;
+}
+
+
+static hipack_string_t*
 parse_key (P, S)
 {
+    hipack_string_t *hstr = NULL;
+    uint32_t alloc_size = 0;
+    uint32_t size = 0;
+
     while (p->look != EOF &&
            !is_hipack_whitespace (p->look) &&
            p->look != ':') {
+        hstr = string_resize (hstr, &alloc_size, size + 1);
+        hstr->data[size++] = p->look;
         nextchar (p, CHECK_OK);
     }
+
+    return hstr ? hstr : &empty_string;
+
+error:
+    hipack_string_free (hstr);
+    return NULL;
 }
 
 
-static void
+static hipack_value_t
 parse_string (P, S)
 {
     int ch, extra;
+    hipack_string_t *hstr = NULL;
+    uint32_t alloc_size = 0;
+    uint32_t size = 0;
 
     matchchar (p, '"', NULL, CHECK_OK);
 
@@ -195,27 +251,40 @@ parse_string (P, S)
                             p->error = "invalid escape sequence";
                             *status = kStatusError;
                         }
-                        return;
+                        goto error;
                     }
                     ch = (xdigit_to_int (ch) * 16) + xdigit_to_int (extra);
                     break;
             }
         }
-        /* TODO: Save "ch". */
+
+        hstr = string_resize (hstr, &alloc_size, size + 1);
+        hstr->data[size++] = ch;
     }
 
     matchchar (p, '"', "unterminated  string value", CHECK_OK);
+    return (hipack_value_t) {
+        .type = HIPACK_STRING,
+        .v_string = hstr ? hstr : &empty_string
+    };
+
+error:
+    hipack_string_free (hstr);
+    return DUMMY_VALUE;
 }
 
 
-static void
+static hipack_value_t
 parse_list (P, S)
 {
+    hipack_list_t *result = hipack_list_new ();
+    hipack_value_t value = DUMMY_VALUE;
+
     matchchar (p, '[', NULL, CHECK_OK);
     skipwhite (p, CHECK_OK);
 
     while (p->look != ']') {
-        parse_value (p, CHECK_OK);
+        value = parse_value (p, CHECK_OK);
         bool got_whitespace = is_hipack_whitespace (p->look);
         skipwhite (p, CHECK_OK);
 
@@ -229,84 +298,108 @@ parse_list (P, S)
     }
 
     matchchar (p, ']', "unterminated list value", CHECK_OK);
+    return (hipack_value_t) { .type = HIPACK_LIST, .v_list = result };
+
+error:
+    hipack_value_free (&value);
+    hipack_list_free (result);
+    return DUMMY_VALUE;
 }
 
 
-static void
+static hipack_value_t
 parse_dict (P, S)
 {
+    hipack_dict_t *dict = NULL;
     matchchar (p, '{', NULL, CHECK_OK);
-    parse_keyval_items (p, '}', CHECK_OK);
+    dict = parse_keyval_items (p, '}', CHECK_OK);
     matchchar (p, '}', "unterminated dict value", CHECK_OK);
+    return (hipack_value_t) { .type = HIPACK_DICT, .v_dict = dict };
+
+error:
+    hipack_dict_free (dict);
+    return DUMMY_VALUE;
 }
 
 
-static int
+static hipack_value_t
 parse_bool (P, S)
 {
     const char *match = NULL;
-    int retval = 0;
+    bool retval = false;
 
     switch (p->look) {
-        case 'T': match = "True"; retval = 1; break;
-        case 't': match = "true"; retval = 1; break;
+        case 'T': match = "True"; retval = true; break;
+        case 't': match = "true"; retval = true; break;
         case 'F': match = "False"; break;
         case 'f': match = "false"; break;
     }
 
     if (match) {
         matchchars (p, match, status);
-        if (*status == kStatusOk)
-            return retval;
+        if (*status == kStatusOk) {
+            return (hipack_value_t) { .type = HIPACK_BOOL, .v_bool = retval };
+        }
     }
 
     p->error = "boolean value expected (true/false)";
-    return 0;
+    return DUMMY_VALUE;
 }
 
 
-static void
+static hipack_value_t
 parse_number (P, S)
 {
     /* TODO */
+    return DUMMY_VALUE;
 }
 
 
-static void
+static hipack_value_t
 parse_value (P, S)
 {
+    hipack_value_t result = DUMMY_VALUE;
+
     switch (p->look) {
         case '"': /* String */
-            parse_string (p, CHECK_OK);
+            result = parse_string (p, CHECK_OK);
             break;
 
         case '[': /* List */
-            parse_list (p, CHECK_OK);
+            result = parse_list (p, CHECK_OK);
             break;
 
         case '{': /* Dict */
-            parse_dict (p, CHECK_OK);
+            result = parse_dict (p, CHECK_OK);
             break;
 
         case 'T': /* Bool */
         case 't':
         case 'F':
         case 'f':
-            parse_bool (p, CHECK_OK);
+            result = parse_bool (p, CHECK_OK);
             break;
 
         default: /* Integer or Float */
-            parse_number (p, CHECK_OK);
+            result = parse_number (p, CHECK_OK);
             break;
     }
+
+error:
+    return result;
 }
 
 
-static void
+static hipack_dict_t*
 parse_keyval_items (P, int eos, S)
 {
+    hipack_dict_t *result = hipack_dict_new ();
+    hipack_value_t value = DUMMY_VALUE;
+    hipack_string_t *key = NULL;
+
     while (p->look != eos) {
-        parse_key (p, CHECK_OK);
+        key = parse_key (p, CHECK_OK);
+        hipack_string_free (key); /* TODO: Put key/value in dictionary. */
 
         /* There must either a colon or whitespace before the value. */
         if (p->look == ':') {
@@ -316,30 +409,60 @@ parse_keyval_items (P, int eos, S)
             *status = kStatusError;
         }
         skipwhite (p, CHECK_OK);
-        parse_value (p, CHECK_OK);
+        value = parse_value (p, CHECK_OK);
+
+        /* TODO: Put key/value in dictionary. */
+
+        /*
+         * There must be either a comma or a whitespace after the value,
+         * or the end-of-sequence character.
+         */
+        if (p->look == ',') {
+            nextchar (p, CHECK_OK);
+        } else if (p->look != eos && !is_hipack_whitespace (p->look)) {
+            break;
+        }
+        skipwhite (p, CHECK_OK);
     }
+
+    return result;
+
+error:
+    hipack_string_free (key);
+    hipack_value_free (&value);
+    hipack_dict_free (result);
+    return NULL;
 }
 
 
-static void
+static hipack_dict_t*
 parse_message (P, S)
 {
+    hipack_dict_t *result = NULL;
+
     nextchar (p, CHECK_OK);
     skipwhite (p, CHECK_OK);
 
-    if (p->look == '{') {
+    if (p->look == EOF) {
+        result = hipack_dict_new ();
+    } else if (p->look == '{') {
         /* Input starts with a Dict marker. */
         nextchar (p, CHECK_OK);
         skipwhite (p, CHECK_OK);
-        parse_keyval_items (p, '}', CHECK_OK);
+        result = parse_keyval_items (p, '}', CHECK_OK);
         matchchar (p, '}', "unterminated message", CHECK_OK);
     } else {
-        parse_keyval_items (p, EOF, CHECK_OK);
+        result = parse_keyval_items (p, EOF, CHECK_OK);
     }
+    return result;
+
+error:
+    hipack_dict_free (result);
+    return NULL;
 }
 
 
-int
+hipack_dict_t*
 hipack_read (FILE *fp)
 {
     assert (fp);
@@ -351,10 +474,9 @@ hipack_read (FILE *fp)
         0,
     };
 
-    parse_message (&p, &status);
-    p.fp = NULL;
-
-    return 0;
+    hipack_dict_t *result = parse_message (&p, &status);
+    /* TODO: Some post-processing of "status" */
+    return result;
 }
 
 
