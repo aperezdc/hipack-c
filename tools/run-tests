@@ -7,13 +7,18 @@ t_okay=0
 
 do_one () {
 	local basename=$(basename "$1")
-	printf '%s ... ' "${basename}"
-	if "${mydir}/hipack-parse" "$1" ; then
+	printf '[ [1;33m--[0;0m ] %s\n' "${basename}"
+	if "${mydir}/hipack-parse" "$1" > /dev/null 2> "$1.err" ; then
 		: $(( t_okay++ ))
-		printf 'ok\n'
+		printf '[1F[J[ [1;32mok[0;0m ] %s\n' "${basename}"
 	else
 		failed=( "${failed[@]}" "${basename}" )
-		printf '\n%s ... failed\n' "${basename}"
+		if [[ -s $1.err ]] ; then
+			cat "$1.err"
+			echo
+		fi
+		printf '[1F[J[[1;31mfail[0;0m] %s\n' "${basename}"
+		rm -f "$1.err"
 	fi
 }
 
