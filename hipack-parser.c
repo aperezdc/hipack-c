@@ -45,8 +45,6 @@ struct parser {
 static hipack_value_t parse_value(P, S);
 static hipack_dict_t* parse_keyval_items (P, int eos, S);
 
-static hipack_string_t empty_string = { .size = 0 };
-
 
 static inline bool
 is_hipack_whitespace (int ch)
@@ -217,7 +215,7 @@ parse_key (P, S)
         nextchar (p, CHECK_OK);
     }
 
-    return hstr ? hstr : &empty_string;
+    return hstr ? hstr : hipack_string_new_from_lstring ("", 0);
 
 error:
     hipack_string_free (hstr);
@@ -265,7 +263,7 @@ parse_string (P, S)
     matchchar (p, '"', "unterminated  string value", CHECK_OK);
     return (hipack_value_t) {
         .type = HIPACK_STRING,
-        .v_string = hstr ? hstr : &empty_string
+        .v_string = hstr ? hstr : hipack_string_new_from_lstring ("", 0)
     };
 
 error:

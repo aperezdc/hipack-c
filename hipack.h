@@ -50,6 +50,8 @@ struct hipack_string {
 };
 
 
+extern hipack_string_t* hipack_string_new_from_string (const char *str);
+extern hipack_string_t* hipack_string_new_from_lstring (const char *str, uint32_t len);
 extern void hipack_string_free (hipack_string_t *hstr);
 
 
