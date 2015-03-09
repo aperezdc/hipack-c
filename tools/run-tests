@@ -1,0 +1,22 @@
+#! /bin/bash
+set -e
+
+mydir=$(dirname "$0")
+declare -a failed=( )
+t_okay=0
+
+do_one () {
+	local basename=$(basename "$1")
+	printf '%s ... ' "${basename}"
+	if "${mydir}/hipack-parse" "$1" ; then
+		: $(( t_okay++ ))
+		printf 'ok\n'
+	else
+		failed=( "${failed[@]}" "${basename}" )
+		printf '\n%s ... failed\n' "${basename}"
+	fi
+}
+
+for hi in "${mydir}/../test"/*.hi ; do
+	do_one "${hi}"
+done
