@@ -237,9 +237,11 @@ parse_string (P, S)
         /* Handle escapes. */
         if (ch == '\\') {
             switch ((ch = fgetc (p->fp))) {
+                case '"': ch = '"'; break;
                 case 'n': ch = '\n'; break;
                 case 'r': ch = '\r'; break;
                 case 't': ch = '\t'; break;
+                case '\\': ch = '\\'; break;
                 default: /* Hex number. */
                     extra = fgetc (p->fp);
                     if (!isxdigit (extra) || !isxdigit (ch)) {

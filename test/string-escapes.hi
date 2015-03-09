@@ -1,0 +1,7 @@
+hex-escape: "\20" # This is actually a space
+unicode: "\e2\8c\a8" # UTF-8 keyboard symbol
+tab: "\t"
+new-line: "\n"
+carriage-return: "\r"
+double-quote: "\""
+backslash: "\\"
