@@ -399,7 +399,6 @@ parse_keyval_items (P, int eos, S)
 
     while (p->look != eos) {
         key = parse_key (p, CHECK_OK);
-        hipack_string_free (key); /* TODO: Put key/value in dictionary. */
 
         /* There must either a colon or whitespace before the value. */
         if (p->look == ':') {
@@ -412,6 +411,8 @@ parse_keyval_items (P, int eos, S)
         value = parse_value (p, CHECK_OK);
 
         /* TODO: Put key/value in dictionary. */
+        hipack_string_free (key); /* TODO: Put key/value in dictionary. */
+        key = NULL;
 
         /*
          * There must be either a comma or a whitespace after the value,
