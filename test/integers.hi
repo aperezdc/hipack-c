@@ -1,0 +1,12 @@
+hex: 0xcafecafe
+hex-caps: 0xCAFECAFE
+hex-x-cap: 0X123
+hex-x-caps: 0XCAFECAFE
+hex-small: 0x123
+octal: 0744
+negative: -42
+float: 1.2
+float-exp: 1e5
+float-negative: -3.5
+float-exp-negative: 1e-5
+float-negative-exp-negative: -1e-5
