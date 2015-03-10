@@ -11,4 +11,4 @@ script:
     - $COVERAGE && export CC="${CC} -fprofile-arcs -ftest-coverage -O0 -g" || true
     - make hipack-check
 after_success:
-    - $COVERAGE && coveralls --exclude examples --exclude tests --gcov-options '\-lp' || true
+    - $COVERAGE && coveralls --exclude tools --exclude test --gcov-options '\-lp' || true
