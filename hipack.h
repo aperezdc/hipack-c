@@ -61,8 +61,9 @@ struct hipack_list {
 };
 
 
-extern hipack_list_t* hipack_list_new (void);
+extern hipack_list_t* hipack_list_new (uint32_t size);
 extern void hipack_list_free (hipack_list_t *list);
+
 
 extern hipack_dict_t* hipack_dict_new (void);
 extern void hipack_dict_free (hipack_dict_t *dict);

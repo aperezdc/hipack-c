@@ -183,10 +183,19 @@ error:
 #define HIPACK_STRING_POW_SIZE 512
 #endif /* !HIPACK_STRING_POW_SIZE */
 
+#ifndef HIPACK_LIST_CHUNK_SIZE
+#define HIPACK_LIST_CHUNK_SIZE HIPACK_STRING_CHUNK_SIZE
+#endif /* !HIPACK_LIST_CHUNK_SIZE */
+
+#ifndef HIPACK_LIST_POW_SIZE
+#define HIPACK_LIST_POW_SIZE HIPACK_STRING_POW_SIZE
+#endif /* !HIPACK_LIST_POW_SIZE */
+
 
 static hipack_string_t*
 string_resize (hipack_string_t *hstr, uint32_t *alloc, uint32_t size)
 {
+    /* TODO: Use HIPACK_STRING_POW_SIZE. */
     if (size) {
         uint32_t new_size = HIPACK_STRING_CHUNK_SIZE *
             ((size / HIPACK_STRING_CHUNK_SIZE) + 1);
@@ -206,6 +215,32 @@ string_resize (hipack_string_t *hstr, uint32_t *alloc, uint32_t size)
         hstr = NULL;
     }
     return hstr;
+}
+
+
+static hipack_list_t*
+list_resize (hipack_list_t *list, uint32_t *alloc, uint32_t size)
+{
+    /* TODO: Use HIPACK_LIST_POW_SIZE. */
+    if (size) {
+        uint32_t new_size = HIPACK_LIST_CHUNK_SIZE *
+            ((size / HIPACK_LIST_CHUNK_SIZE) + 1);
+        if (new_size < size) {
+            new_size = size;
+        }
+        if (new_size != *alloc) {
+            *alloc = new_size;
+            new_size = sizeof (hipack_list_t) + new_size * sizeof (hipack_value_t);
+            list = (hipack_list_t*)
+                (list ? realloc (list, new_size) : malloc (new_size));
+        }
+        list->size = size;
+    } else {
+        *alloc = 0;
+        free (list);
+        list = NULL;
+    }
+    return list;
 }
 
 
@@ -287,14 +322,20 @@ error:
 static hipack_value_t
 parse_list (P, S)
 {
-    hipack_list_t *result = hipack_list_new ();
     hipack_value_t value = DUMMY_VALUE;
+    hipack_list_t *list = NULL;
+    uint32_t alloc_size = 0;
+    uint32_t size = 0;
 
     matchchar (p, '[', NULL, CHECK_OK);
     skipwhite (p, CHECK_OK);
 
     while (p->look != ']') {
         value = parse_value (p, CHECK_OK);
+        list = list_resize (list, &alloc_size, size + 1);
+        list->data[size++] = value;
+        value = DUMMY_VALUE;
+
         bool got_whitespace = is_hipack_whitespace (p->look);
         skipwhite (p, CHECK_OK);
 
@@ -308,11 +349,14 @@ parse_list (P, S)
     }
 
     matchchar (p, ']', "unterminated list value", CHECK_OK);
-    return (hipack_value_t) { .type = HIPACK_LIST, .v_list = result };
+    return (hipack_value_t) {
+        .type = HIPACK_LIST,
+        .v_list = list ? list : hipack_list_new (0),
+    };
 
 error:
     hipack_value_free (&value);
-    hipack_list_free (result);
+    hipack_list_free (list);
     return DUMMY_VALUE;
 }
 
