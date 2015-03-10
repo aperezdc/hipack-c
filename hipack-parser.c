@@ -538,10 +538,7 @@ parse_keyval_items (P, int eos, S)
         }
         skipwhite (p, CHECK_OK);
         value = parse_value (p, CHECK_OK);
-
-        /* TODO: Put key/value in dictionary. */
-        hipack_string_free (key); /* TODO: Put key/value in dictionary. */
-        key = NULL;
+        hipack_dict_set_adopt_key (result, &key, &value);
 
         /*
          * There must be either a comma or a whitespace after the value,

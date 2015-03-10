@@ -67,6 +67,19 @@ extern void hipack_list_free (hipack_list_t *list);
 extern hipack_dict_t* hipack_dict_new (void);
 extern void hipack_dict_free (hipack_dict_t *dict);
 
+extern void hipack_dict_set_adopt_key (hipack_dict_t        *dict,
+                                       hipack_string_t     **key,
+                                       const hipack_value_t *value);
+
+extern void hipack_dict_set (hipack_type_t         *dict,
+                             const hipack_string_t *key,
+                             const hipack_value_t  *value);
+
+extern bool hipack_dict_get (const hipack_dict_t   *dict,
+                             const hipack_string_t *key,
+                             hipack_value_t        *value);
+
+
 
 static inline hipack_type_t
 hipack_value_type (const hipack_value_t *value)
