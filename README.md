@@ -1,6 +1,9 @@
 hipack-c
 ========
 
+[![Builld status](https://img.shields.io/travis/aperezdc/hipack-c.svg?style=flat-square)](https://travis-ci.org/aperezdc/hipack-c)
+[![Code coverage](https://img.shields.io/coveralls/aperezdc/hipack-c/master.svg?style=flat-square)](https://coveralls.io/r/aperezdc/hipack-c?branch=master)
+
 Implementation of the [HiPack](http://hipack.org) serialization format C.
 Features:
 
