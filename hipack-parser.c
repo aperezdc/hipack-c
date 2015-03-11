@@ -494,6 +494,10 @@ parse_number (P, S)
                 }
                 dot_seen = true;
             }
+            if (p->look == '-' || p->look == '+') {
+                *status = kStatusError;
+                goto error;
+            }
             SAVE_LOOK ();
             nextchar (p, CHECK_OK);
         }
