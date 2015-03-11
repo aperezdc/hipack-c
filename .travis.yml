@@ -9,6 +9,7 @@ install:
     - $COVERAGE && sudo pip install cpp-coveralls || true
 script:
     - $COVERAGE && export CC="${CC} -fprofile-arcs -ftest-coverage -O0 -g" || true
+    - export DUMB_TERMINAL=1
     - make hipack-check
 after_success:
     - $COVERAGE && coveralls --exclude tools --exclude test --gcov-options '\-lp' || true
