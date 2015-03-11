@@ -61,13 +61,33 @@ for name in "${tests[@]}" ; do
 		if ${expect_fail} ; then passed=true ; else passed=false ; fi
 	fi
 
+	diff_text=''
+	if ${passed} && [[ -r ${srcdir}/test/${name}.err ]] ; then
+		# Show diff
+		if ! diff -q \
+			"${srcdir}/test/${name}.err" \
+			"/tmp/hipack-$$-${name}.err" \
+			&> /dev/null
+		then
+			# Diffs don't match, show 'em
+			diff_text=$(diff -ud \
+				"${srcdir}/test/${name}.err" \
+				"/tmp/hipack-$$-${name}.err" \
+				|| true)
+			passed=false
+		fi
+	fi
+
 	report_progress "${name}" ${passed}
 
 	if ${passed} ; then
 		okays=( "${okays[@]}" "${name}" )
 	else
 		fails=( "${fails[@]}" "${name}" )
-		if [[ -s /tmp/hipack-$$-${name}.err ]] ; then
+		echo
+		if [[ -n ${diff_text} ]] ; then
+			echo "${diff_text}"
+		elif [[ -s /tmp/hipack-$$-${name}.err ]] ; then
 			cat "/tmp/hipack-$$-${name}.err"
 		fi
 	fi
