@@ -63,6 +63,29 @@ is_hipack_whitespace (int ch)
 
 
 static inline bool
+is_hipack_key_character (int ch)
+{
+    switch (ch) {
+        /* Keys do not contain whitespace */
+        case 0x09: /* Horizontal tab. */
+        case 0x0A: /* New line. */
+        case 0x0D: /* Carriage return. */
+        case 0x20: /* Space. */
+        /* Characters are forbidden in keys by the spec. */
+        case '[':
+        case ']':
+        case '{':
+        case '}':
+        case ':':
+        case ',':
+            return false;
+        default:
+            return true;
+    }
+}
+
+
+static inline bool
 is_number_char (int ch)
 {
     switch (ch) {
@@ -253,6 +276,7 @@ list_resize (hipack_list_t *list, uint32_t *alloc, uint32_t size)
 }
 
 
+/* On empty (missing) keys, NULL is returned. */
 static hipack_string_t*
 parse_key (P, S)
 {
@@ -260,15 +284,13 @@ parse_key (P, S)
     uint32_t alloc_size = 0;
     uint32_t size = 0;
 
-    while (p->look != EOF &&
-           !is_hipack_whitespace (p->look) &&
-           p->look != ':') {
+    while (p->look != EOF && is_hipack_key_character (p->look)) {
         hstr = string_resize (hstr, &alloc_size, size + 1);
         hstr->data[size++] = p->look;
         nextchar (p, CHECK_OK);
     }
 
-    return hstr ? hstr : hipack_string_new_from_lstring ("", 0);
+    return hstr;
 
 error:
     hipack_string_free (hstr);
@@ -583,6 +605,11 @@ parse_keyval_items (P, int eos, S)
 
     while (p->look != eos) {
         key = parse_key (p, CHECK_OK);
+        if (!key) {
+            p->error = "missing dictionary key";
+            *status = kStatusError;
+            goto error;
+        }
 
         /* There must either a colon or whitespace before the value. */
         if (p->look == ':') {
