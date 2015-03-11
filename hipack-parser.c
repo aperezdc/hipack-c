@@ -695,8 +695,10 @@ hipack_read (FILE        *fp,
     hipack_dict_t *result = parse_message (&p, &status);
     switch (status) {
         case kStatusOk:
+            assert (result);
+            break;
         case kStatusError:
-            /* noop */
+            assert (!result);
             break;
         case kStatusIoError:
             assert (ferror (p.fp));
