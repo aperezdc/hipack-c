@@ -615,7 +615,9 @@ parse_message (P, S)
     skipwhite (p, CHECK_OK);
 
     if (p->look == EOF) {
-        /* noop */
+        if (ferror (p->fp)) {
+            *status = kStatusIoError;
+        }
     } else if (p->look == '{') {
         /* Input starts with a Dict marker. */
         nextchar (p, CHECK_OK);
