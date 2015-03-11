@@ -25,23 +25,16 @@ declare -ir total=${#tests[@]}
 
 
 if [[ -z ${DUMB_CONSOLE} || ${DUMB_CONSOLE} -eq 0 ]] ; then
+	echo
 	report_progress () {
-		printf '[1G[K[%%%3i|+[1;32m%2i[0;0m|-[1;31m%2i[0;0m] %s ' \
-			$(( 100 * ++current / total )) \
-			${#okays[@]} \
-			${#fails[@]} \
-			"$1"
+		printf '[1F[K[%%%3i|+[1;32m%2i[0;0m|-[1;31m%2i[0;0m] %s\n' \
+			$(( 100 * ++current / total )) ${#okays[@]} ${#fails[@]} "$1"
 	}
 else
 	report_progress () {
 		local status='ok'
 		$2 || status='failed'
-
-		printf '[%i/%i] %s (%s)\n' \
-			$(( ++current )) \
-			${total} \
-			"$1" \
-			${status}
+		printf '[%i/%i] %s (%s)\n' \ $(( ++current )) ${total} "$1" ${status}
 	}
 fi
 
@@ -54,7 +47,7 @@ for name in "${tests[@]}" ; do
 	fi
 
 	if "${srcdir}/tools/hipack-parse" "${srcdir}/test/${name}.hi" \
-		2> "/tmp/hipack-$$-${name}.err" > /dev/null
+		&> "/tmp/hipack-$$-${name}.err"
 	then
 		if ${expect_fail} ; then passed=false ; else passed=true ; fi
 	else
@@ -84,16 +77,15 @@ for name in "${tests[@]}" ; do
 		okays=( "${okays[@]}" "${name}" )
 	else
 		fails=( "${fails[@]}" "${name}" )
-		echo
 		if [[ -n ${diff_text} ]] ; then
 			echo "${diff_text}"
 		elif [[ -s /tmp/hipack-$$-${name}.err ]] ; then
 			cat "/tmp/hipack-$$-${name}.err"
 		fi
+		echo
 	fi
 	rm -f "/tmp/hipack-$$-${name}.err"
 done
-echo
 
 echo "Total: ${total}"
 echo "Passed: ${#okays[@]} ($(( 100 * ${#okays[@]} / total ))%)"
