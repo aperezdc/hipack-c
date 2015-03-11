@@ -109,9 +109,10 @@ hipack_dict_new (void)
 void
 hipack_dict_free (hipack_dict_t *dict)
 {
-    assert (dict);
-    free_all_nodes (dict);
-    free (dict);
+    if (dict) {
+        free_all_nodes (dict);
+        free (dict);
+    }
 }
 
 
