@@ -120,31 +120,43 @@ xdigit_to_int (int xdigit)
 }
 
 
+static inline int
+nextchar_raw (P, S)
+{
+    int ch = fgetc (p->fp);
+    switch (ch) {
+        case EOF:
+            if (ferror (p->fp)) {
+                *status = kStatusIoError;
+            }
+            break;
+
+        case '\n':
+            p->column = 0;
+            p->line++;
+            /* fall-through */
+        default:
+            p->column++;
+    }
+    return ch;
+}
+
 
 static inline void
 nextchar (P, S)
 {
     do {
-        p->look = fgetc (p->fp);
-
-        if (p->look == '\n') {
-            p->column = 0;
-            p->line++;
-        }
-        p->column++;
+        p->look = nextchar_raw (p, CHECK_OK);
 
         if (p->look == '#') {
-            while ((p->look = fgetc (p->fp)) != '\n' &&
-                   (p->look != EOF)) /* noop */;
-
-            if (p->look != EOF) {
-                ungetc ('\n', p->fp);
+            while (p->look != '\n' && p->look != EOF) {
+                p->look = nextchar_raw (p, CHECK_OK);
             }
         }
     } while (p->look != EOF && p->look == '#');
 
-    if (p->look == EOF && ferror (p->fp))
-        *status = kStatusIoError;
+error:
+    /* noop */;
 }
 
 
@@ -153,9 +165,6 @@ skipwhite (P, S)
 {
     while (p->look != EOF && is_hipack_whitespace (p->look))
         nextchar (p, status);
-
-    if (p->look == EOF && ferror (p->fp))
-        *status = kStatusIoError;
 }
 
 
@@ -270,42 +279,44 @@ error:
 static hipack_value_t
 parse_string (P, S)
 {
-    int ch, extra;
     hipack_string_t *hstr = NULL;
     uint32_t alloc_size = 0;
     uint32_t size = 0;
 
     matchchar (p, '"', NULL, CHECK_OK);
 
-    for (ch = p->look; ch != EOF && ch != '"'; ch = fgetc (p->fp)) {
+    while (p->look != '"' && p->look != EOF) {
         /* Handle escapes. */
-        if (ch == '\\') {
-            switch ((ch = fgetc (p->fp))) {
-                case '"': ch = '"'; break;
-                case 'n': ch = '\n'; break;
-                case 'r': ch = '\r'; break;
-                case 't': ch = '\t'; break;
-                case '\\': ch = '\\'; break;
-                default: /* Hex number. */
-                    extra = fgetc (p->fp);
-                    if (!isxdigit (extra) || !isxdigit (ch)) {
-                        if (extra == EOF && ferror (p->fp)) {
-                            *status = kStatusIoError;
-                        } else {
-                            p->error = "invalid escape sequence";
-                            *status = kStatusError;
-                        }
+        if (p->look == '\\') {
+            int extra;
+
+            p->look = nextchar_raw (p, CHECK_OK);
+            switch (p->look) {
+                case '"' : p->look = '"' ; break;
+                case 'n' : p->look = '\n'; break;
+                case 'r' : p->look = '\r'; break;
+                case 't' : p->look = '\t'; break;
+                case '\\': p->look = '\\'; break;
+                default:
+                    /* Hex number. */
+                    extra = nextchar_raw (p, CHECK_OK);
+                    if (!isxdigit (extra) || !isxdigit (p->look)) {
+                        p->error = "invalid escape sequence";
+                        *status = kStatusError;
                         goto error;
                     }
-                    ch = (xdigit_to_int (ch) * 16) + xdigit_to_int (extra);
+                    p->look = (xdigit_to_int (p->look) * 16) +
+                        xdigit_to_int (extra);
                     break;
             }
         }
 
         hstr = string_resize (hstr, &alloc_size, size + 1);
-        hstr->data[size++] = ch;
+        hstr->data[size++] = p->look;
+
+        /* Read next character from the string. */
+        p->look = nextchar_raw (p, CHECK_OK);
     }
-    p->look = ch;
 
     matchchar (p, '"', "unterminated  string value", CHECK_OK);
     return (hipack_value_t) {
