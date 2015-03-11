@@ -429,7 +429,7 @@ parse_bool (P, S)
     }
 
 error:
-    p->error = "boolean value expected (true/false)";
+    p->error = "invalid boolean value";
     return DUMMY_VALUE;
 }
 
