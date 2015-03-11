@@ -38,6 +38,19 @@ hipack_string_new_from_lstring (const char *str, uint32_t len)
 }
 
 
+hipack_string_t*
+hipack_string_copy (const hipack_string_t *hstr)
+{
+    assert (hstr);
+
+    if (hstr == &s_empty_string)
+        return &s_empty_string;
+
+    return hipack_string_new_from_lstring ((const char*) hstr->data,
+                                           hstr->size);
+}
+
+
 void
 hipack_string_free (hipack_string_t *hstr)
 {
@@ -45,3 +58,31 @@ hipack_string_free (hipack_string_t *hstr)
         free (hstr);
 }
 
+
+uint32_t
+hipack_string_hash (const hipack_string_t *hstr)
+{
+    assert (hstr);
+
+    uint32_t ret = 0;
+    uint32_t ctr = 0;
+
+    for (uint32_t i = 0; i < hstr->size; i++) {
+        ret ^= hstr->data[i] << ctr;
+        ctr  = (ctr + 1) % sizeof (void*);
+    }
+
+    return ret;
+}
+
+
+bool
+hipack_string_equal (const hipack_string_t *hstr1,
+                     const hipack_string_t *hstr2)
+{
+    assert (hstr1);
+    assert (hstr2);
+
+    return (hstr1->size == hstr2->size) &&
+        memcmp (hstr1->data, hstr2->data, hstr1->size) == 0;
+}

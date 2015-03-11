@@ -609,13 +609,13 @@ error:
 static hipack_dict_t*
 parse_message (P, S)
 {
-    hipack_dict_t *result = NULL;
+    hipack_dict_t *result = hipack_dict_new ();
 
     nextchar (p, CHECK_OK);
     skipwhite (p, CHECK_OK);
 
     if (p->look == EOF) {
-        result = hipack_dict_new ();
+        /* noop */
     } else if (p->look == '{') {
         /* Input starts with a Dict marker. */
         nextchar (p, CHECK_OK);
@@ -651,10 +651,8 @@ hipack_read (FILE        *fp,
     hipack_dict_t *result = parse_message (&p, &status);
     switch (status) {
         case kStatusOk:
-            assert (result);
-            break;
         case kStatusError:
-            assert (!result);
+            /* noop */
             break;
         case kStatusIoError:
             assert (ferror (p.fp));

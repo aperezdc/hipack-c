@@ -25,10 +25,11 @@ typedef enum {
 
 
 /* Forward declarations. */
-typedef struct hipack_value  hipack_value_t;
-typedef struct hipack_string hipack_string_t;
-typedef struct hipack_dict   hipack_dict_t;
-typedef struct hipack_list   hipack_list_t;
+typedef struct hipack_value     hipack_value_t;
+typedef struct hipack_string    hipack_string_t;
+typedef struct hipack_dict      hipack_dict_t;
+typedef struct hipack_dict_node hipack_dict_node_t;
+typedef struct hipack_list      hipack_list_t;
 
 
 struct hipack_value {
@@ -50,8 +51,12 @@ struct hipack_string {
 };
 
 
+extern hipack_string_t* hipack_string_copy (const hipack_string_t *hstr);
 extern hipack_string_t* hipack_string_new_from_string (const char *str);
 extern hipack_string_t* hipack_string_new_from_lstring (const char *str, uint32_t len);
+extern uint32_t hipack_string_hash (const hipack_string_t *hstr);
+extern bool hipack_string_equal (const hipack_string_t *hstr1,
+                                 const hipack_string_t *hstr2);
 extern void hipack_string_free (hipack_string_t *hstr);
 
 
@@ -65,6 +70,14 @@ extern hipack_list_t* hipack_list_new (uint32_t size);
 extern void hipack_list_free (hipack_list_t *list);
 
 
+struct hipack_dict {
+    hipack_dict_node_t **nodes;
+    hipack_dict_node_t  *first;
+    uint32_t             count;
+    uint32_t             size;
+};
+
+
 extern hipack_dict_t* hipack_dict_new (void);
 extern void hipack_dict_free (hipack_dict_t *dict);
 
@@ -72,7 +85,7 @@ extern void hipack_dict_set_adopt_key (hipack_dict_t        *dict,
                                        hipack_string_t     **key,
                                        const hipack_value_t *value);
 
-extern void hipack_dict_set (hipack_type_t         *dict,
+extern void hipack_dict_set (hipack_dict_t         *dict,
                              const hipack_string_t *key,
                              const hipack_value_t  *value);
 
