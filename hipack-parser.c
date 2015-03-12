@@ -348,7 +348,7 @@ parse_string (P, S)
         p->look = nextchar_raw (p, CHECK_OK);
     }
 
-    matchchar (p, '"', "unterminated  string value", CHECK_OK);
+    matchchar (p, '"', "unterminated string value", CHECK_OK);
     return (hipack_value_t) {
         .type = HIPACK_STRING,
         .v_string = hstr ? hstr : hipack_string_new_from_lstring ("", 0)
