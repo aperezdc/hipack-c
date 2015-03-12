@@ -3,13 +3,21 @@ compiler:
     - clang
     - gcc
 env:
-    - COVERAGE=false
-    - COVERAGE=true
+    global:
+        - DUMB_CONSOLE=1
+    matrix:
+        - COVERAGE=false ASAN=true
+        - COVERAGE=false ASAN=false
+        - COVERAGE=true  ASAN=false
+matrix:
+    exclude:
+        - env: ASAN=true
+          compiler: gcc
 install:
     - $COVERAGE && sudo pip install cpp-coveralls || true
 script:
     - $COVERAGE && export CC="${CC} -fprofile-arcs -ftest-coverage -O0 -g" || true
-    - export DUMB_CONSOLE=1
+    - $ASAN && export CC='clang -O1 -fsanitize=address -g -fno-omit-frame-pointer' || true
     - make hipack-check
 after_success:
     - $COVERAGE && coveralls --exclude tools --exclude test --gcov-options '\-lp' || true
