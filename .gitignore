@@ -1,4 +1,6 @@
 *.o
 *.a
 .*.sw[op]
+*.gcda
+*.gcno
 tools/hipack-parse
