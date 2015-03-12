@@ -114,6 +114,13 @@ is_number_char (int ch)
 }
 
 
+static inline bool
+is_octal_nonzero_digit (int ch)
+{
+    return (ch > '0') && (ch < '8');
+}
+
+
 static inline int
 xdigit_to_int (int xdigit)
 {
@@ -465,7 +472,7 @@ parse_number (P, S)
             SAVE_LOOK ();
             nextchar (p, CHECK_OK);
             is_hex = true;
-        } else {
+        } else if (is_octal_nonzero_digit (p->look)) {
             is_octal = true;
         }
     }
