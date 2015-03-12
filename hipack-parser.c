@@ -615,14 +615,29 @@ parse_keyval_items (P, hipack_dict_t *result, int eos, S)
             goto error;
         }
 
-        /* There must either a colon or whitespace before the value. */
-        if (p->look == ':') {
-            nextchar (p, CHECK_OK);
-        } else if (!is_hipack_whitespace (p->look)) {
-            p->error = "whitespace or colon expected";
-            *status = kStatusError;
+        bool got_separator = false;
+
+        if (is_hipack_whitespace (p->look)) {
+            got_separator = true;
+            skipwhite (p, CHECK_OK);
         }
-        skipwhite (p, CHECK_OK);
+        switch (p->look) {
+            case ':':
+                nextchar (p, CHECK_OK);
+                skipwhite (p, CHECK_OK);
+                /* fall-through */
+            case '{':
+            case '[':
+                got_separator = true;
+                break;
+        }
+
+        if (!got_separator) {
+            p->error = "missing separator";
+            *status = kStatusError;
+            goto error;
+        }
+
         value = parse_value (p, CHECK_OK);
         hipack_dict_set_adopt_key (result, &key, &value);
 
