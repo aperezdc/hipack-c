@@ -95,3 +95,4 @@ if [[ ${#fails[@]} -gt 0 ]] ; then
 		echo "  ${name}"
 	done
 fi
+[[ ${#fails[@]} -eq 0 ]] || exit 1
