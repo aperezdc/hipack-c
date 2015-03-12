@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
+#include <string.h>
 #include <stdbool.h>
 
 
@@ -22,6 +23,33 @@ typedef enum {
     HIPACK_LIST,
     HIPACK_DICT,
 } hipack_type_t;
+
+
+extern void* (*hipack_alloc) (void*, size_t);
+extern void* hipack_alloc_stdlib (void*, size_t);
+extern void* hipack_alloc_array_extra (void*, size_t nmemb, size_t size, size_t extra);
+
+
+static inline void*
+hipack_alloc_bzero (size_t size)
+{
+    assert (size > 0);
+    return memset ((*hipack_alloc) (NULL, size), 0, size);
+}
+
+
+static inline void*
+hipack_alloc_array (void *optr, size_t nmemb, size_t size)
+{
+    return hipack_alloc_array_extra (optr, nmemb, size, 0);
+}
+
+
+static inline void
+hipack_alloc_free (void *optr)
+{
+    (*hipack_alloc) (optr, 0);
+}
 
 
 /* Forward declarations. */

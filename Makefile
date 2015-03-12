@@ -2,6 +2,7 @@ CFLAGS += -std=c99
 hipack_PATH ?= .
 hipack_OBJS = ${hipack_PATH}/hipack-parser.o \
 			  ${hipack_PATH}/hipack-string.o \
+			  ${hipack_PATH}/hipack-alloc.o \
 			  ${hipack_PATH}/hipack-list.o \
 			  ${hipack_PATH}/hipack-dict.o
 hipack = ${hipack_PATH}/libhipack.a
