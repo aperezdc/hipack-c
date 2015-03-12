@@ -16,9 +16,11 @@ hipack_list_t*
 hipack_list_new (uint32_t size)
 {
     hipack_list_t *list;
+
     if (size) {
-        list = (hipack_list_t*) malloc (
-            sizeof (hipack_list_t) + size * sizeof (hipack_value_t));
+        list = hipack_alloc_array_extra (NULL, size,
+                                         sizeof (hipack_value_t),
+                                         sizeof (hipack_list_t));
         list->size = size;
     } else {
         list = &s_empty_list;
@@ -33,7 +35,7 @@ hipack_list_free (hipack_list_t *list)
     if (list && list != &s_empty_list) {
         for (uint32_t i = 0; i < list->size; i++)
             hipack_value_free (&list->data[i]);
-        free (list);
+        hipack_alloc_free (list);
     }
 }
 

@@ -44,7 +44,7 @@ struct parser {
 
 
 static hipack_value_t parse_value (P, S);
-static hipack_dict_t* parse_keyval_items (P, int eos, S);
+static void parse_keyval_items (P, hipack_dict_t *result, int eos, S);
 
 
 static inline bool
@@ -237,14 +237,15 @@ string_resize (hipack_string_t *hstr, uint32_t *alloc, uint32_t size)
         if (new_size != *alloc) {
             *alloc = new_size;
             new_size = sizeof (hipack_string_t) + new_size * sizeof (uint8_t);
-            hstr = (hipack_string_t*)
-                (hstr ? realloc (hstr, new_size) : malloc (new_size));
+            hstr = hipack_alloc_array_extra (hstr, new_size,
+                                             sizeof (uint8_t),
+                                             sizeof (hipack_string_t));
         }
         hstr->size = size;
     } else {
-        *alloc = 0;
-        free (hstr);
+        hipack_alloc_free (hstr);
         hstr = NULL;
+        *alloc = 0;
     }
     return hstr;
 }
@@ -262,15 +263,15 @@ list_resize (hipack_list_t *list, uint32_t *alloc, uint32_t size)
         }
         if (new_size != *alloc) {
             *alloc = new_size;
-            new_size = sizeof (hipack_list_t) + new_size * sizeof (hipack_value_t);
-            list = (hipack_list_t*)
-                (list ? realloc (list, new_size) : malloc (new_size));
+            list = hipack_alloc_array_extra (list, new_size,
+                                             sizeof (hipack_value_t),
+                                             sizeof (hipack_list_t));
         }
         list->size = size;
     } else {
-        *alloc = 0;
-        free (list);
+        hipack_alloc_free (list);
         list = NULL;
+        *alloc = 0;
     }
     return list;
 }
@@ -397,10 +398,10 @@ error:
 static hipack_value_t
 parse_dict (P, S)
 {
-    hipack_dict_t *dict = NULL;
+    hipack_dict_t *dict = hipack_dict_new ();
     matchchar (p, '{', NULL, CHECK_OK);
     skipwhite (p, CHECK_OK);
-    dict = parse_keyval_items (p, '}', CHECK_OK);
+    parse_keyval_items (p, dict, '}', CHECK_OK);
     matchchar (p, '}', "unterminated dict value", CHECK_OK);
     return (hipack_value_t) { .type = HIPACK_DICT, .v_dict = dict };
 
@@ -600,10 +601,9 @@ error:
 }
 
 
-static hipack_dict_t*
-parse_keyval_items (P, int eos, S)
+static void
+parse_keyval_items (P, hipack_dict_t *result, int eos, S)
 {
-    hipack_dict_t *result = hipack_dict_new ();
     hipack_value_t value = DUMMY_VALUE;
     hipack_string_t *key = NULL;
 
@@ -637,14 +637,11 @@ parse_keyval_items (P, int eos, S)
         }
         skipwhite (p, CHECK_OK);
     }
-
-    return result;
+    return;
 
 error:
     hipack_string_free (key);
     hipack_value_free (&value);
-    hipack_dict_free (result);
-    return NULL;
 }
 
 
@@ -664,10 +661,10 @@ parse_message (P, S)
         /* Input starts with a Dict marker. */
         nextchar (p, CHECK_OK);
         skipwhite (p, CHECK_OK);
-        result = parse_keyval_items (p, '}', CHECK_OK);
+        parse_keyval_items (p, result, '}', CHECK_OK);
         matchchar (p, '}', "unterminated message", CHECK_OK);
     } else {
-        result = parse_keyval_items (p, EOF, CHECK_OK);
+        parse_keyval_items (p, result, EOF, CHECK_OK);
     }
     return result;
 

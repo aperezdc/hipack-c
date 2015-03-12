@@ -27,8 +27,8 @@ hipack_string_new_from_lstring (const char *str, uint32_t len)
 {
     assert (str);
     if (len > 0) {
-        hipack_string_t *hstr = (hipack_string_t*) malloc (
-            sizeof (hipack_list_t) + len * sizeof (uint8_t));
+        hipack_string_t *hstr = hipack_alloc_array_extra (NULL,
+                len, sizeof (uint8_t), sizeof (hipack_string_t));
         memcpy (hstr->data, str, len);
         hstr->size = len;
         return hstr;
@@ -54,8 +54,9 @@ hipack_string_copy (const hipack_string_t *hstr)
 void
 hipack_string_free (hipack_string_t *hstr)
 {
-    if (hstr && hstr != &s_empty_string)
-        free (hstr);
+    if (hstr && hstr != &s_empty_string) {
+        hipack_alloc_free (hstr);
+    }
 }
 
 

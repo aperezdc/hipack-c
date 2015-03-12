@@ -36,8 +36,9 @@ static inline hipack_dict_node_t*
 make_node (hipack_string_t *key,
            const hipack_value_t  *value)
 {
-    hipack_dict_node_t *node = (hipack_dict_node_t*)
-        malloc (sizeof (hipack_dict_node_t));
+    assert (key->size);
+    hipack_dict_node_t *node =
+            hipack_alloc_bzero (sizeof (hipack_dict_node_t));
     memcpy (&node->value, value, sizeof (hipack_value_t));
     node->key = key;
     return node;
@@ -49,7 +50,7 @@ free_node (hipack_dict_node_t *node)
 {
     hipack_string_free (node->key);
     hipack_value_free (&node->value);
-    free (node);
+    hipack_alloc_free (node);
 }
 
 
@@ -72,9 +73,10 @@ rehash (hipack_dict_t *dict)
         node->next = NULL;
 
     dict->size *= HIPACK_DICT_RESIZE_FACTOR;
-    dict->nodes = (hipack_dict_node_t**)
-        realloc (dict->nodes, sizeof (hipack_dict_node_t*) * dict->size);
-    memset (dict->nodes, 0x00, sizeof (hipack_dict_node_t*) * dict->size);
+    dict->nodes = hipack_alloc_array (dict->nodes,
+                                      sizeof (hipack_dict_node_t*),
+                                      dict->size);
+    memset (dict->nodes, 0, sizeof (hipack_dict_node_t*) * dict->size);
 
     for (hipack_dict_node_t *node = dict->first; node; node = node->next_node) {
         uint32_t hash_val = hipack_string_hash (node->key) % (dict->size - 1);
@@ -96,12 +98,12 @@ rehash (hipack_dict_t *dict)
 hipack_dict_t*
 hipack_dict_new (void)
 {
-    hipack_dict_t *dict = (hipack_dict_t*)
-        malloc (sizeof (hipack_dict_t));
-    dict->count = 0;
+    hipack_dict_t *dict = hipack_alloc_bzero (sizeof (hipack_dict_t));
     dict->size  = HIPACK_DICT_DEFAULT_SIZE;
-    dict->nodes = (hipack_dict_node_t**)
-        malloc (sizeof (hipack_dict_node_t*) * dict->size);
+    dict->nodes = hipack_alloc_array (NULL,
+                                      sizeof (hipack_dict_node_t*),
+                                      dict->size);
+    memset (dict->nodes, 0, sizeof (hipack_dict_node_t*) * dict->size);
     return dict;
 }
 
@@ -111,7 +113,8 @@ hipack_dict_free (hipack_dict_t *dict)
 {
     if (dict) {
         free_all_nodes (dict);
-        free (dict);
+        hipack_alloc_free (dict->nodes);
+        hipack_alloc_free (dict);
     }
 }
 
@@ -141,8 +144,8 @@ void hipack_dict_set_adopt_key (hipack_dict_t        *dict,
     for (; node; node = node->next) {
         if (hipack_string_equal (node->key, *key)) {
             hipack_value_free (&node->value);
-            hipack_string_free (*key);
             memcpy (&node->value, value, sizeof (hipack_value_t));
+            hipack_string_free (*key);
             *key = NULL;
             return;
         }
