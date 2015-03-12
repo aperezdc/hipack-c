@@ -79,7 +79,7 @@ rehash (hipack_dict_t *dict)
     memset (dict->nodes, 0, sizeof (hipack_dict_node_t*) * dict->size);
 
     for (hipack_dict_node_t *node = dict->first; node; node = node->next_node) {
-        uint32_t hash_val = hipack_string_hash (node->key) % (dict->size - 1);
+        uint32_t hash_val = hipack_string_hash (node->key) % dict->size;
         hipack_dict_node_t *n = dict->nodes[hash_val];
         if (!n) {
             dict->nodes[hash_val] = node;
@@ -138,7 +138,7 @@ void hipack_dict_set_adopt_key (hipack_dict_t        *dict,
     assert (*key);
     assert (value);
 
-    uint32_t hash_val = hipack_string_hash (*key) % (dict->size - 1);
+    uint32_t hash_val = hipack_string_hash (*key) % dict->size;
     hipack_dict_node_t *node = dict->nodes[hash_val];
 
     for (; node; node = node->next) {
