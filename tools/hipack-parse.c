@@ -27,12 +27,17 @@ main (int argc, const char *argv[])
     }
 
     int retcode = EXIT_SUCCESS;
-    const char *error = NULL;
-    unsigned line, column;
-    hipack_dict_t *message = hipack_read (fp, &error, &line, &column);
+    hipack_reader_t reader = {
+        .getchar = hipack_stdio_getchar,
+        .getchar_data = fp,
+    };
+    hipack_dict_t *message = hipack_read (&reader);
     if (!message) {
+        assert (reader.error);
         fprintf (stderr, "line %u, column %u: %s\n",
-                 line, column, error);
+                 reader.error_line, reader.error_column,
+                 (reader.error == HIPACK_READ_ERROR)
+                    ? strerror (errno) : reader.error);
         retcode = EXIT_FAILURE;
     }
     hipack_dict_free (message);

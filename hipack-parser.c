@@ -14,6 +14,9 @@
 #include <errno.h>
 
 
+const char* HIPACK_READ_ERROR = "Error reading from input";
+
+
 enum status {
     kStatusOk = 0,
     kStatusEof,
@@ -24,7 +27,8 @@ typedef enum status status_t;
 
 
 struct parser {
-    FILE       *fp;
+    int       (*getchar) (void*);
+    void       *getchar_data;
     int         look;
     unsigned    line;
     unsigned    column;
@@ -153,12 +157,12 @@ xdigit_to_int (int xdigit)
 static inline int
 nextchar_raw (P, S)
 {
-    int ch = fgetc (p->fp);
+    int ch = (*p->getchar) (p->getchar_data);
     switch (ch) {
-        case EOF:
-            if (ferror (p->fp)) {
-                *status = kStatusIoError;
-            }
+        case HIPACK_IO_ERROR:
+            *status = kStatusIoError;
+            /* fall-through */
+        case HIPACK_IO_EOF:
             break;
 
         case '\n':
@@ -179,11 +183,11 @@ nextchar (P, S)
         p->look = nextchar_raw (p, CHECK_OK);
 
         if (p->look == '#') {
-            while (p->look != '\n' && p->look != EOF) {
+            while (p->look != '\n' && p->look != HIPACK_IO_EOF) {
                 p->look = nextchar_raw (p, CHECK_OK);
             }
         }
-    } while (p->look != EOF && p->look == '#');
+    } while (p->look != HIPACK_IO_EOF && p->look == '#');
 
 error:
     /* noop */;
@@ -193,7 +197,7 @@ error:
 static inline void
 skipwhite (P, S)
 {
-    while (p->look != EOF && is_hipack_whitespace (p->look))
+    while (p->look != HIPACK_IO_EOF && is_hipack_whitespace (p->look))
         nextchar (p, status);
 }
 
@@ -292,7 +296,7 @@ parse_key (P, S)
     uint32_t alloc_size = 0;
     uint32_t size = 0;
 
-    while (p->look != EOF && is_hipack_key_character (p->look)) {
+    while (p->look != HIPACK_IO_EOF && is_hipack_key_character (p->look)) {
         hstr = string_resize (hstr, &alloc_size, size + 1);
         hstr->data[size++] = p->look;
         nextchar (p, CHECK_OK);
@@ -315,7 +319,7 @@ parse_string (P, S)
 
     matchchar (p, '"', NULL, CHECK_OK);
 
-    while (p->look != '"' && p->look != EOF) {
+    while (p->look != '"' && p->look != HIPACK_IO_EOF) {
         /* Handle escapes. */
         if (p->look == '\\') {
             int extra;
@@ -480,7 +484,7 @@ parse_number (P, S)
     /* Read the rest of the number. */
     bool dot_seen = false;
     bool exp_seen = false;
-    while (p->look != EOF && is_number_char (p->look)) {
+    while (p->look != HIPACK_IO_EOF && is_number_char (p->look)) {
         if (!is_hex && (p->look == 'e' || p->look == 'E')) {
             if (exp_seen) {
                 *status = kStatusError;
@@ -675,10 +679,8 @@ parse_message (P, S)
     nextchar (p, CHECK_OK);
     skipwhite (p, CHECK_OK);
 
-    if (p->look == EOF) {
-        if (ferror (p->fp)) {
-            *status = kStatusIoError;
-        }
+    if (p->look == HIPACK_IO_ERROR) {
+        *status = kStatusIoError;
     } else if (p->look == '{') {
         /* Input starts with a Dict marker. */
         nextchar (p, CHECK_OK);
@@ -686,7 +688,7 @@ parse_message (P, S)
         parse_keyval_items (p, result, '}', CHECK_OK);
         matchchar (p, '}', "unterminated message", CHECK_OK);
     } else {
-        parse_keyval_items (p, result, EOF, CHECK_OK);
+        parse_keyval_items (p, result, HIPACK_IO_EOF, CHECK_OK);
     }
     return result;
 
@@ -697,20 +699,24 @@ error:
 
 
 hipack_dict_t*
-hipack_read (FILE        *fp,
-             const char **error,
-             unsigned    *line,
-             unsigned    *column)
+hipack_read (hipack_reader_t *reader)
 {
-    assert (fp);
+    assert (reader);
 
-    status_t status = kStatusOk;
+    /*
+     * Copy the reader function (and its data pointer) into the parser
+     * structure. The rest of the fields are used as results, so the
+     * reader structure can be cleaned up right after.
+     */
     struct parser p = {
-        .fp = fp,
-        .line = 1,
+        .getchar      = reader->getchar,
+        .getchar_data = reader->getchar_data,
+        .line         = 1,
         0,
     };
+    memset (reader, 0x00, sizeof (hipack_reader_t));
 
+    status_t status = kStatusOk;
     hipack_dict_t *result = parse_message (&p, &status);
     switch (status) {
         case kStatusOk:
@@ -718,23 +724,33 @@ hipack_read (FILE        *fp,
             break;
         case kStatusError:
             assert (!result);
+            assert (p.error);
             break;
         case kStatusIoError:
-            assert (ferror (p.fp));
-            p.error = strerror (errno);
+            p.error = HIPACK_READ_ERROR;
             hipack_dict_free (result);
             result = NULL;
             break;
         case kStatusEof:
-            assert (feof (p.fp));
             break;
     }
 
-    if (error) *error   = p.error;
-    if (line) *line     = p.line;
-    if (column) *column = p.column;
+    reader->error        = p.error;
+    reader->error_line   = p.line;
+    reader->error_column = p.column;
 
     return result;
 }
 
+
+int
+hipack_stdio_getchar (void *fp)
+{
+    assert (fp);
+    int ch = fgetc ((FILE*) fp);
+    if (ch == EOF) {
+        return ferror ((FILE*) fp) ? HIPACK_IO_ERROR : HIPACK_IO_EOF;
+    }
+    return ch;
+}
 

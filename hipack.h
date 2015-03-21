@@ -184,10 +184,25 @@ hipack_value_free (hipack_value_t *value)
 }
 
 
-extern hipack_dict_t* hipack_read (FILE        *fp,
-                                   const char **error,
-                                   unsigned    *line,
-                                   unsigned    *column);
+typedef struct {
+    int       (*getchar) (void*);
+    void       *getchar_data;
+    const char *error;
+    unsigned    error_line;
+    unsigned    error_column;
+} hipack_reader_t;
+
+
+enum {
+    HIPACK_IO_EOF   = -1,
+    HIPACK_IO_ERROR = -2,
+};
+
+extern const char* HIPACK_READ_ERROR;
+
+
+extern int hipack_stdio_getchar (void* fp);
+extern hipack_dict_t* hipack_read (hipack_reader_t *reader);
 
 
 #endif /* !HIPACK_H */
