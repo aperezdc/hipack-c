@@ -96,6 +96,8 @@ struct hipack_list {
 
 extern hipack_list_t* hipack_list_new (uint32_t size);
 extern void hipack_list_free (hipack_list_t *list);
+extern bool hipack_list_equal (const hipack_list_t *a,
+                               const hipack_list_t *b);
 
 
 struct hipack_dict {
@@ -121,6 +123,8 @@ extern bool hipack_dict_get (const hipack_dict_t   *dict,
                              const hipack_string_t *key,
                              hipack_value_t        *value);
 
+extern bool hipack_dict_equal (const hipack_dict_t *a,
+                               const hipack_dict_t *b);
 
 
 static inline hipack_type_t
@@ -156,6 +160,9 @@ HIPACK_TYPES (HIPACK_DEFINE_GET_VALUE)
 
 #undef HIPACK_DEFINE_IS_TYPE
 #undef HIPACK_DEFINE_GET_VALUE
+
+extern bool hipack_value_equal (const hipack_value_t *a,
+                                const hipack_value_t *b);
 
 static inline void
 hipack_value_free (hipack_value_t *value)
@@ -203,6 +210,25 @@ extern const char* HIPACK_READ_ERROR;
 
 extern int hipack_stdio_getchar (void* fp);
 extern hipack_dict_t* hipack_read (hipack_reader_t *reader);
+
+
+typedef struct {
+    int (*putchar) (void*, int);
+    void *putchar_data;
+} hipack_writer_t;
+
+
+#define HIPACK_DEFINE_WRITE_VALUE(_type, name, type_tag) \
+    extern bool hipack_write_ ## name (hipack_writer_t *writer, \
+                                       const _type value);
+
+HIPACK_TYPES (HIPACK_DEFINE_WRITE_VALUE)
+
+#undef HIPACK_DEFINE_WRITE_VALUE
+
+extern bool hipack_write (hipack_writer_t     *writer,
+                          const hipack_dict_t *message);
+extern int hipack_stdio_putchar (void* fp, int ch);
 
 
 #endif /* !HIPACK_H */
