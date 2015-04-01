@@ -143,8 +143,14 @@ hipack_write_float (hipack_writer_t *writer,
 
     char buf[24];
     int nchars = fpconv_dtoa (value, buf);
+    bool need_dot = true;
     for (int i = 0; i < nchars; i++) {
         CHECK_IO (writechar (writer, buf[i]));
+        if (buf[i] == '.') need_dot = false;
+    }
+    if (need_dot) {
+        CHECK_IO (writechar (writer, '.'));
+        CHECK_IO (writechar (writer, '0'));
     }
     return false;
 }
