@@ -146,7 +146,9 @@ hipack_write_float (hipack_writer_t *writer,
     bool need_dot = true;
     for (int i = 0; i < nchars; i++) {
         CHECK_IO (writechar (writer, buf[i]));
-        if (buf[i] == '.') need_dot = false;
+        if (buf[i] == '.' || buf[i] == 'e' || buf[i] == 'E') {
+            need_dot = false;
+        }
     }
     if (need_dot) {
         CHECK_IO (writechar (writer, '.'));
