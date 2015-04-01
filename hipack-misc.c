@@ -66,7 +66,16 @@ hipack_dict_equal (const hipack_dict_t *a,
     if (a->count != b->count)
         return false;
 
-    return false;
+    const hipack_string_t *key;
+    hipack_value_t *a_value;
+    HIPACK_DICT_FOREACH (key, a_value, a) {
+        hipack_value_t *b_value = hipack_dict_get (b, key);
+        if (!b_value || !hipack_value_equal (a_value, b_value)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 

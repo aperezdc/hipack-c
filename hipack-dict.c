@@ -172,13 +172,46 @@ void hipack_dict_set_adopt_key (hipack_dict_t        *dict,
 }
 
 
-bool
+hipack_value_t*
 hipack_dict_get (const hipack_dict_t   *dict,
-                 const hipack_string_t *key,
-                 hipack_value_t        *value)
+                 const hipack_string_t *key)
+{
+    assert (dict);
+    /* TODO */
+    return NULL;
+}
+
+
+hipack_value_t*
+hipack_dict_first (const hipack_dict_t    *dict,
+                   const hipack_string_t **key)
 {
     assert (dict);
     assert (key);
-    /* TODO */
-    return false;
+
+    if (dict->first) {
+        *key = dict->first->key;
+        return (hipack_value_t*) dict->first;
+    } else {
+        *key = NULL;
+        return NULL;
+    }
+}
+
+
+hipack_value_t*
+hipack_dict_next (hipack_value_t         *value,
+                  const hipack_string_t **key)
+{
+    assert (value);
+    assert (key);
+
+    hipack_dict_node_t *node = (hipack_dict_node_t*) value;
+    if (node->next_node) {
+        *key = node->next_node->key;
+        return (hipack_value_t*) node->next_node;
+    } else {
+        *key = NULL;
+        return NULL;
+    }
 }

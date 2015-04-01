@@ -111,6 +111,10 @@ struct hipack_dict {
 extern hipack_dict_t* hipack_dict_new (void);
 extern void hipack_dict_free (hipack_dict_t *dict);
 
+extern bool hipack_dict_equal (const hipack_dict_t *a,
+                               const hipack_dict_t *b);
+
+
 extern void hipack_dict_set_adopt_key (hipack_dict_t        *dict,
                                        hipack_string_t     **key,
                                        const hipack_value_t *value);
@@ -119,13 +123,19 @@ extern void hipack_dict_set (hipack_dict_t         *dict,
                              const hipack_string_t *key,
                              const hipack_value_t  *value);
 
-extern bool hipack_dict_get (const hipack_dict_t   *dict,
-                             const hipack_string_t *key,
-                             hipack_value_t        *value);
+extern hipack_value_t* hipack_dict_get (const hipack_dict_t   *dict,
+                                        const hipack_string_t *key);
 
-extern bool hipack_dict_equal (const hipack_dict_t *a,
-                               const hipack_dict_t *b);
+extern hipack_value_t* hipack_dict_first (const hipack_dict_t    *dict,
+                                          const hipack_string_t **key);
 
+extern hipack_value_t* hipack_dict_next (hipack_value_t         *value,
+                                         const hipack_string_t **key);
+
+#define HIPACK_DICT_FOREACH(_k, _v, _d)          \
+    for ((_v) = hipack_dict_first ((_d), &(_k)); \
+         (_v) != NULL;                           \
+         (_v) = hipack_dict_next ((_v), &(_k)))
 
 static inline hipack_type_t
 hipack_value_type (const hipack_value_t *value)
