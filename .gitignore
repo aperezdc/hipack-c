@@ -3,5 +3,6 @@
 .*.sw[op]
 *.gcda
 *.gcno
+tools/hipack-cat
 tools/hipack-parse
 tools/hipack-roundtrip
