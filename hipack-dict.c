@@ -177,7 +177,29 @@ hipack_dict_get (const hipack_dict_t   *dict,
                  const hipack_string_t *key)
 {
     assert (dict);
-    /* TODO */
+    assert (key);
+
+    uint32_t hash_val = hipack_string_hash (key) % dict->size;
+    hipack_dict_node_t *node = dict->nodes[hash_val];
+
+    if (node) {
+        if (hipack_string_equal (key, node->key)) {
+            return &node->value;
+        }
+
+        hipack_dict_node_t *last_node = node;
+        node = node->next;
+        while (node) {
+            if (hipack_string_equal (key, node->key)) {
+                last_node->next = node->next;
+                node->next = dict->nodes[hash_val];
+                dict->nodes[hash_val] = node;
+                return &node->value;
+            }
+            last_node = node;
+            node = node->next;
+        }
+    }
     return NULL;
 }
 
