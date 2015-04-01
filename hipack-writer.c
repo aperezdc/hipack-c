@@ -183,6 +183,10 @@ hipack_write_string (hipack_writer_t       *writer,
                 if (hstr->data[i] < 0x20) {
                     /* ASCII non-printable character. */
                     CHECK_IO (writechar (writer, '\\'));
+                    if ((uint8_t) hstr->data[i] < 16) {
+                        /* Leading zero. */
+                        CHECK_IO (writechar (writer, '0'));
+                    }
                     CHECK_IO (formatint (writer, (uint8_t) hstr->data[i], 16));
                 } else {
                     CHECK_IO (writechar (writer, hstr->data[i]));
