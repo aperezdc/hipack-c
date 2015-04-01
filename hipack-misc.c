@@ -68,7 +68,7 @@ hipack_dict_equal (const hipack_dict_t *a,
 
     const hipack_string_t *key;
     hipack_value_t *a_value;
-    HIPACK_DICT_FOREACH (key, a_value, a) {
+    HIPACK_DICT_FOREACH (a, key, a_value) {
         hipack_value_t *b_value = hipack_dict_get (b, key);
         if (!b_value || !hipack_value_equal (a_value, b_value)) {
             return false;

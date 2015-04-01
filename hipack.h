@@ -132,7 +132,7 @@ extern hipack_value_t* hipack_dict_first (const hipack_dict_t    *dict,
 extern hipack_value_t* hipack_dict_next (hipack_value_t         *value,
                                          const hipack_string_t **key);
 
-#define HIPACK_DICT_FOREACH(_k, _v, _d)          \
+#define HIPACK_DICT_FOREACH(_d, _k, _v)          \
     for ((_v) = hipack_dict_first ((_d), &(_k)); \
          (_v) != NULL;                           \
          (_v) = hipack_dict_next ((_v), &(_k)))
