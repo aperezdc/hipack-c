@@ -20,4 +20,4 @@ script:
     - $ASAN && export CC='clang -O1 -fsanitize=address -g -fno-omit-frame-pointer' || true
     - make hipack-check
 after_success:
-    - $COVERAGE && coveralls --exclude tools --exclude test --gcov-options '\-lp' || true
+    - $COVERAGE && coveralls --exclude tools --exclude test --exclude fpconv --gcov-options '\-lp' || true
