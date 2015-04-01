@@ -19,6 +19,9 @@ for hi in "${srcdir}/test"/*.hi ; do
 	name=${hi##*/}
 	name=${name%.hi}
 	tests=( "${tests[@]}" "${name}" )
+	if [[ ${name} != fail-* ]] ; then
+		tests=( "${tests[@]}" "roundtrip/${name}" )
+	fi
 done
 
 declare -ir total=${#tests[@]}
@@ -46,28 +49,40 @@ for name in "${tests[@]}" ; do
 		expect_fail=false
 	fi
 
-	if "${srcdir}/tools/hipack-parse" "${srcdir}/test/${name}.hi" \
-		&> "/tmp/hipack-$$-${name}.err"
-	then
-		if ${expect_fail} ; then passed=false ; else passed=true ; fi
-	else
-		if ${expect_fail} ; then passed=true ; else passed=false ; fi
-	fi
-
-	diff_text=''
-	if ${passed} && [[ -r ${srcdir}/test/${name}.err ]] ; then
-		# Show diff
-		if ! diff -q \
-			"${srcdir}/test/${name}.err" \
-			"/tmp/hipack-$$-${name}.err" \
-			&> /dev/null
+	if [[ ${name} = roundtrip/* ]] ; then
+		if "${srcdir}/tools/hipack-roundtrip" \
+		   "${srcdir}/test/${name#roundtrip/}.hi" \
+		   &> "/tmp/hipack-$$-${name//\//-}.err"
 		then
-			# Diffs don't match, show 'em
-			diff_text=$(diff -ud \
+			passed=true
+		else
+			passed=false
+		fi
+	else
+		if "${srcdir}/tools/hipack-parse" \
+		   "${srcdir}/test/${name}.hi" \
+		   &> "/tmp/hipack-$$-${name}.err"
+		then
+			if ${expect_fail} ; then passed=false ; else passed=true ; fi
+		else
+			if ${expect_fail} ; then passed=true ; else passed=false ; fi
+		fi
+
+		diff_text=''
+		if ${passed} && [[ -r ${srcdir}/test/${name}.err ]] ; then
+			# Show diff
+			if ! diff -q \
 				"${srcdir}/test/${name}.err" \
 				"/tmp/hipack-$$-${name}.err" \
-				|| true)
-			passed=false
+				&> /dev/null
+			then
+				# Diffs don't match, show 'em
+				diff_text=$(diff -ud \
+					"${srcdir}/test/${name}.err" \
+					"/tmp/hipack-$$-${name}.err" \
+					|| true)
+				passed=false
+			fi
 		fi
 	fi
 
@@ -79,12 +94,12 @@ for name in "${tests[@]}" ; do
 		fails=( "${fails[@]}" "${name}" )
 		if [[ -n ${diff_text} ]] ; then
 			echo "${diff_text}"
-		elif [[ -s /tmp/hipack-$$-${name}.err ]] ; then
-			cat "/tmp/hipack-$$-${name}.err"
+		elif [[ -s /tmp/hipack-$$-${name//\//-}.err ]] ; then
+			cat "/tmp/hipack-$$-${name//\//-}.err"
 		fi
 		echo
 	fi
-	rm -f "/tmp/hipack-$$-${name}.err"
+	rm -f "/tmp/hipack-$$-${name//\//-}.err"
 done
 
 echo "Total: ${total}"
