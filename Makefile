@@ -30,7 +30,14 @@ ${hipack_PATH}/tools/hipack-parse: \
 ${hipack_PATH}/tools/hipack-roundtrip: \
 	${hipack_PATH}/tools/hipack-roundtrip.o ${hipack}
 
-hipack-check: ${hipack_PATH}/tools/hipack-parse
+hipack-check: \
+		${hipack_PATH}/tools/hipack-parse \
+		${hipack_PATH}/tools/hipack-roundtrip
 	@${hipack_PATH}/tools/run-tests
+
+${hipack_PATH}/hipack-writer.o: ${hipack_PATH}/fpconv/src/fpconv.c
+${hipack_PATH}/fpconv/src/fpconv.c: ${hipack_PATH}/.gitmodules
+	cd ${hipack_PATH} && git submodule init fpconv
+	cd ${hipack_PATH} && git submodule update fpconv
 
 .PHONY: hipack hipack-objs hipack-tools hipack-check

@@ -222,9 +222,15 @@ extern int hipack_stdio_getchar (void* fp);
 extern hipack_dict_t* hipack_read (hipack_reader_t *reader);
 
 
+enum {
+    HIPACK_WRITER_COMPACT = -1,
+    HIPACK_WRITER_INDENTED = 0,
+};
+
 typedef struct {
-    int (*putchar) (void*, int);
-    void *putchar_data;
+    int   (*putchar) (void*, int);
+    void   *putchar_data;
+    int32_t indent;
 } hipack_writer_t;
 
 
@@ -236,9 +242,12 @@ HIPACK_TYPES (HIPACK_DEFINE_WRITE_VALUE)
 
 #undef HIPACK_DEFINE_WRITE_VALUE
 
+extern bool hipack_write_value (hipack_writer_t      *writer,
+                                const hipack_value_t *value);
+
 extern bool hipack_write (hipack_writer_t     *writer,
                           const hipack_dict_t *message);
-extern int hipack_stdio_putchar (void* fp, int ch);
 
+extern int hipack_stdio_putchar (void* fp, int ch);
 
 #endif /* !HIPACK_H */
