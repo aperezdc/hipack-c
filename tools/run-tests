@@ -51,13 +51,14 @@ for name in "${tests[@]}" ; do
 
 	if [[ ${name} = roundtrip/* ]] ; then
 		if "${srcdir}/tools/hipack-roundtrip" \
-		   "${srcdir}/test/${name#roundtrip/}.hi" \
-		   &> "/tmp/hipack-$$-${name//\//-}.err"
+		   "${srcdir}/test/${name#roundtrip/}.hi" && \
+		   "${srcdir}/tools/hipack-roundtrip" -c \
+		   "${srcdir}/test/${name#roundtrip/}.hi"
 		then
 			passed=true
 		else
 			passed=false
-		fi
+		fi &> "/tmp/hipack-$$-${name//\//-}.err"
 	else
 		if "${srcdir}/tools/hipack-parse" \
 		   "${srcdir}/test/${name}.hi" \

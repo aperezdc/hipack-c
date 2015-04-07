@@ -332,7 +332,9 @@ hipack_write (hipack_writer_t     *writer,
 {
     assert (writer);
     assert (message);
-    writer->indent = 0;
+    if (writer->indent != HIPACK_WRITER_COMPACT) {
+        writer->indent = HIPACK_WRITER_INDENTED;
+    }
     return write_keyval (writer, message);
 }
 

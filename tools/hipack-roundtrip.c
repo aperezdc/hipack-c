@@ -5,23 +5,49 @@
  * Distributed under terms of the MIT license.
  */
 
+#define _POSIX_C_SOURCE 2
 #include "../hipack.h"
 #include <stdlib.h>
+#include <unistd.h>
 #include <errno.h>
 
 
-int
-main (int argc, const char *argv[])
+static void
+usage (const char *argv0, int code)
 {
-    if (argc != 2) {
-        fprintf (stderr, "Usage: %s PATH\n", argv[0]);
-        return EXIT_FAILURE;
+    FILE *output = (code == EXIT_FAILURE) ? stderr : stdout;
+    fprintf (output, "Usage: %s [-c] PATH\n", argv0);
+    exit (code);
+}
+
+
+int
+main (int argc, char *argv[])
+{
+    bool compact = false;
+    int opt;
+
+    while ((opt = getopt (argc, argv, "hc")) != -1) {
+        switch (opt) {
+            case 'c':
+                compact = true;
+                break;
+            case 'h':
+                usage (argv[0], EXIT_SUCCESS);
+                break;
+            default:
+                usage (argv[0], EXIT_FAILURE);
+        }
     }
 
-    FILE *fp = fopen (argv[1], "rb");
+    if (optind >= argc) {
+        usage (argv[0], EXIT_FAILURE);
+    }
+
+    FILE *fp = fopen (argv[optind], "rb");
     if (!fp) {
         fprintf (stderr, "%s: Cannot open '%s' (%s)\n",
-                 argv[0], argv[1], strerror (errno));
+                 argv[0], argv[optind], strerror (errno));
         return EXIT_FAILURE;
     }
 
@@ -49,6 +75,7 @@ main (int argc, const char *argv[])
     hipack_writer_t writer = {
         .putchar = hipack_stdio_putchar,
         .putchar_data = fp,
+        .indent = compact ? HIPACK_WRITER_COMPACT : HIPACK_WRITER_INDENTED,
     };
 
     if (hipack_write (&writer, message1)) {
