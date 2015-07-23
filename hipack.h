@@ -99,6 +99,16 @@ extern void hipack_list_free (hipack_list_t *list);
 extern bool hipack_list_equal (const hipack_list_t *a,
                                const hipack_list_t *b);
 
+static inline uint32_t
+hipack_list_size (const hipack_list_t *list)
+{
+    assert (list);
+    return list->size;
+}
+
+#define HIPACK_LIST_AT(_list, _index) \
+    (assert ((_index) < (_list)->size), &((_list)->data[_index]))
+
 
 struct hipack_dict {
     hipack_dict_node_t **nodes;
