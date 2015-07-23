@@ -14,6 +14,7 @@ hipack-clean:
 	${RM} ${hipack} ${hipack_OBJS}
 	${RM} ${hipack_PATH}/tools/*.o \
 		${hipack_PATH}/tools/hipack-cat \
+		${hipack_PATH}/tools/hipack-get \
 		${hipack_PATH}/tools/hipack-parse \
 		${hipack_PATH}/tools/hipack-roundtrip
 
@@ -23,11 +24,15 @@ ${hipack}: ${hipack_OBJS}
 
 hipack-tools: \
 	${hipack_PATH}/tools/hipack-cat \
+	${hipack_PATH}/tools/hipack-get \
 	${hipack_PATH}/tools/hipack-parse \
 	${hipack_PATH}/tools/hipack-roundtrip
 
 ${hipack_PATH}/tools/hipack-cat: \
 	${hipack_PATH}/tools/hipack-cat.o ${hipack}
+
+${hipack_PATH}/tools/hipack-get: \
+	${hipack_PATH}/tools/hipack-get.o ${hipack}
 
 ${hipack_PATH}/tools/hipack-parse: \
 	${hipack_PATH}/tools/hipack-parse.o ${hipack}

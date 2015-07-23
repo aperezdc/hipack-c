@@ -4,5 +4,6 @@
 *.gcda
 *.gcno
 tools/hipack-cat
+tools/hipack-get
 tools/hipack-parse
 tools/hipack-roundtrip
