@@ -212,6 +212,9 @@ write_keyval (hipack_writer_t     *writer,
 {
     const hipack_string_t *key;
     hipack_value_t *value;
+
+    uint32_t pending = hipack_dict_size (dict);
+
     HIPACK_DICT_FOREACH (dict, key, value) {
         writeindent (writer);
         /* Key */
@@ -239,10 +242,11 @@ write_keyval (hipack_writer_t     *writer,
         }
 
         CHECK_IO (hipack_write_value (writer, value));
-        CHECK_IO (writechar (writer, ','));
 
         if (writer->indent != HIPACK_WRITER_COMPACT) {
             CHECK_IO (writechar (writer, '\n'));
+        } else if (--pending > 0) {
+            CHECK_IO (writechar (writer, ','));
         }
     }
 
