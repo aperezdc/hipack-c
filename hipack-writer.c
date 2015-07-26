@@ -285,15 +285,16 @@ hipack_write_dict (hipack_writer_t     *writer,
 {
     CHECK_IO (writechar (writer, '{'));
 
-    if (writer->indent != HIPACK_WRITER_COMPACT) {
-        CHECK_IO (writechar (writer, '\n'));
+    if (hipack_dict_size (dict)) {
+        if (writer->indent != HIPACK_WRITER_COMPACT) {
+            CHECK_IO (writechar (writer, '\n'));
+        }
+
+        moreindent (writer);
+        CHECK_IO (write_keyval (writer, dict));
+        lessindent (writer);
+        CHECK_IO (writeindent (writer));
     }
-
-    moreindent (writer);
-    CHECK_IO (write_keyval (writer, dict));
-    lessindent (writer);
-
-    CHECK_IO (writeindent (writer));
     CHECK_IO (writechar (writer, '}'));
     return false;
 }

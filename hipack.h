@@ -118,6 +118,14 @@ struct hipack_dict {
 };
 
 
+static inline uint32_t
+hipack_dict_size (const hipack_dict_t *dict)
+{
+    assert (dict);
+    return dict->count;
+}
+
+
 extern hipack_dict_t* hipack_dict_new (void);
 extern void hipack_dict_free (hipack_dict_t *dict);
 
