@@ -265,12 +265,13 @@ hipack_write_list (hipack_writer_t     *writer,
         }
 
         moreindent (writer);
-        for (uint32_t i = 0; i < list->size; i++) {
+        for (uint32_t i = 0; i < list->size;) {
             CHECK_IO (writeindent (writer));
-            CHECK_IO (hipack_write_value (writer, &list->data[i]));
-            CHECK_IO (writechar (writer, ','));
+            CHECK_IO (hipack_write_value (writer, &list->data[i++]));
             if (writer->indent != HIPACK_WRITER_COMPACT) {
                 CHECK_IO (writechar (writer, '\n'));
+            } else if (i < list->size) {
+                CHECK_IO (writechar (writer, ','));
             }
         }
         lessindent (writer);
