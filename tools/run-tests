@@ -26,6 +26,26 @@ done
 
 declare -ir total=${#tests[@]}
 
+: ${TEST_TIMEOUT:=10}
+GOT_TIMEOUT=false
+if timeout --version 2> /dev/null | grep -qF 'GNU coreutils'
+then
+	function with_timeout () {
+		local code=0
+		GOT_TIMEOUT=false
+		timeout ${TEST_TIMEOUT} "$@"
+		code=$?
+		if [[ ${code} -eq 124 ]] ; then
+			GOT_TIMEOUT=true
+		fi
+		return ${code}
+	}
+else
+	function with_timeout () {
+		"$@"
+	}
+fi
+
 
 if [[ -z ${DUMB_CONSOLE} || ${DUMB_CONSOLE} -eq 0 ]] ; then
 	echo
@@ -36,7 +56,13 @@ if [[ -z ${DUMB_CONSOLE} || ${DUMB_CONSOLE} -eq 0 ]] ; then
 else
 	report_progress () {
 		local status='ok'
-		$2 || status='failed'
+		if ! $2 ; then
+			if ${GOT_TIMEOUT} ; then
+				status='timeout'
+			else
+				status='failed'
+			fi
+		fi
 		printf '[%i/%i] %s (%s)\n' \ $(( ++current )) ${total} "$1" ${status}
 	}
 fi
@@ -50,7 +76,8 @@ for name in "${tests[@]}" ; do
 	fi
 
 	if [[ ${name} = roundtrip/* ]] ; then
-		if "${srcdir}/tools/hipack-roundtrip" \
+		if with_timeout \
+		   "${srcdir}/tools/hipack-roundtrip" \
 		   "${srcdir}/test/${name#roundtrip/}.hi" && \
 		   "${srcdir}/tools/hipack-roundtrip" -c \
 		   "${srcdir}/test/${name#roundtrip/}.hi"
@@ -60,7 +87,8 @@ for name in "${tests[@]}" ; do
 			passed=false
 		fi &> "/tmp/hipack-$$-${name//\//-}.err"
 	else
-		if "${srcdir}/tools/hipack-parse" \
+		if with_timeout \
+		   "${srcdir}/tools/hipack-parse" \
 		   "${srcdir}/test/${name}.hi" \
 		   &> "/tmp/hipack-$$-${name}.err"
 		then
