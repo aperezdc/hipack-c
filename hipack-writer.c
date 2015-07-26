@@ -259,20 +259,23 @@ hipack_write_list (hipack_writer_t     *writer,
 
     CHECK_IO (writechar (writer, '['));
 
-    if (writer->indent != HIPACK_WRITER_COMPACT) {
-        CHECK_IO (writechar (writer, '\n'));
-    }
-
-    moreindent (writer);
-    for (uint32_t i = 0; i < list->size; i++) {
-        CHECK_IO (writeindent (writer));
-        CHECK_IO (hipack_write_value (writer, &list->data[i]));
-        CHECK_IO (writechar (writer, ','));
+    if (hipack_list_size (list)) {
         if (writer->indent != HIPACK_WRITER_COMPACT) {
             CHECK_IO (writechar (writer, '\n'));
         }
+
+        moreindent (writer);
+        for (uint32_t i = 0; i < list->size; i++) {
+            CHECK_IO (writeindent (writer));
+            CHECK_IO (hipack_write_value (writer, &list->data[i]));
+            CHECK_IO (writechar (writer, ','));
+            if (writer->indent != HIPACK_WRITER_COMPACT) {
+                CHECK_IO (writechar (writer, '\n'));
+            }
+        }
+        lessindent (writer);
+        CHECK_IO (writeindent (writer));
     }
-    lessindent (writer);
 
     CHECK_IO (writechar (writer, ']'));
     return false;
