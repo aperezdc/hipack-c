@@ -46,6 +46,11 @@ else
 	}
 fi
 
+LAST_CMD=''
+function run_cmd () {
+	LAST_CMD="$*"
+	with_timeout "$@"
+}
 
 if [[ -z ${DUMB_CONSOLE} || ${DUMB_CONSOLE} -eq 0 ]] ; then
 	echo
@@ -76,7 +81,7 @@ for name in "${tests[@]}" ; do
 	fi
 
 	if [[ ${name} = roundtrip/* ]] ; then
-		if with_timeout \
+		if run_cmd \
 		   "${srcdir}/tools/hipack-roundtrip" \
 		   "${srcdir}/test/${name#roundtrip/}.hi" && \
 		   "${srcdir}/tools/hipack-roundtrip" -c \
@@ -87,7 +92,7 @@ for name in "${tests[@]}" ; do
 			passed=false
 		fi &> "/tmp/hipack-$$-${name//\//-}.err"
 	else
-		if with_timeout \
+		if run_cmd \
 		   "${srcdir}/tools/hipack-parse" \
 		   "${srcdir}/test/${name}.hi" \
 		   &> "/tmp/hipack-$$-${name}.err"
@@ -126,6 +131,8 @@ for name in "${tests[@]}" ; do
 		elif [[ -s /tmp/hipack-$$-${name//\//-}.err ]] ; then
 			cat "/tmp/hipack-$$-${name//\//-}.err"
 		fi
+		echo "Command: ${LAST_CMD}"
+		echo
 		echo
 	fi
 	rm -f "/tmp/hipack-$$-${name//\//-}.err"
