@@ -486,7 +486,7 @@ parse_number (P, S)
     bool exp_seen = false;
     while (p->look != HIPACK_IO_EOF && is_number_char (p->look)) {
         if (!is_hex && (p->look == 'e' || p->look == 'E')) {
-            if (exp_seen) {
+            if (exp_seen || is_octal) {
                 *status = kStatusError;
                 goto error;
             }
@@ -527,10 +527,8 @@ parse_number (P, S)
     char *endptr = NULL;
     if (is_hex) {
         assert (!is_octal);
-        if (exp_seen || dot_seen) {
-            *status = kStatusError;
-            goto error;
-        }
+        assert (!exp_seen);
+        assert (!dot_seen);
         char *endptr = NULL;
         long v = strtol ((const char*) hstr->data, &endptr, 16);
         /* TODO: Check for overflow. */
@@ -538,10 +536,8 @@ parse_number (P, S)
         result.v_integer = (int32_t) v;
     } else if (is_octal) {
         assert (!is_hex);
-        if (exp_seen || dot_seen) {
-            *status = kStatusError;
-            goto error;
-        }
+        assert (!exp_seen);
+        assert (!dot_seen);
         long v = strtol ((const char*) hstr->data, &endptr, 8);
         /* TODO: Check for overflow. */
         result.type = HIPACK_INTEGER;
