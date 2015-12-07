@@ -47,5 +47,6 @@ ${hipack_PATH}/hipack-writer.o: ${hipack_PATH}/fpconv/src/fpconv.c
 ${hipack_PATH}/fpconv/src/fpconv.c: ${hipack_PATH}/.gitmodules
 	cd ${hipack_PATH} && git submodule init fpconv
 	cd ${hipack_PATH} && git submodule update fpconv
+	touch $@
 
 .PHONY: hipack hipack-objs hipack-tools hipack-check
