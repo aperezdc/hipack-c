@@ -1,0 +1,40 @@
+single-annotations {
+	integer-value :annot 0
+	float-value :annot 1.1
+	string-value :annot "Hello"
+	bool-value :annot True
+	list-value :annot []
+	dict-value :annot {}
+}
+multiple-annotations {
+	integer-value :annot1 :annot2 0
+	float-value :annot1 :annot2 1.1
+	string-value :annot1 :annot2 :annot3 "Three"
+	bool-value :has :two :annots False
+	list-value :annot1 :annot2 []
+	dict-value :annot1 :annot2 :annot3 :annot4 {}
+}
+annotation-delimiter-variations {
+	double-colon-no-space::annot 0
+	double-colon-space: :annot 0
+	multi-double-colon-no-space::annot1:annot2 0
+	multi-double-colon-space: :anot1:annot2 0
+	multi-spaced-double-colon-nospace::annot1 :annot2 0
+	multi-spaced-double-colon-space: :annot1 :annot2 0
+}
+intrinsic-annotations {
+	integer-value :.int 0
+	float-value :.float 1.1
+	string-value :.string "Hello"
+	bool-value :.bool True
+	list-value :.list []
+	dict-value :.dict {}
+}
+list-item-annotations {
+	spaced-items      [:annot1 "item1" :annot2 "item2"]
+	comma-items       [:annot1 "item1",:annot2 "item2"]
+	commaspaced-items [:annot1 "item1", :annot2 "item2"]
+	leading-space     [ :annot1 "item1" :annot2 "item2"]
+	trailing-space    [:annot1 "item1" :annot2 "item2" ]
+	leadtrail-space   [ :annot1 "item1" :annot2 "item2" ]
+}
