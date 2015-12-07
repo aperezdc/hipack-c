@@ -44,7 +44,7 @@ struct parser {
 #define DUMMY ) /* Makes autoindentation work. */
 #undef DUMMY
 
-#define DUMMY_VALUE ((hipack_value_t) { .type = HIPACK_BOOL })
+#define DUMMY_VALUE ((hipack_value_t) { .type = HIPACK_BOOL, .annot = NULL })
 
 
 static hipack_value_t parse_value (P, S);
@@ -310,8 +310,8 @@ error:
 }
 
 
-static hipack_value_t
-parse_string (P, S)
+static void
+parse_string (P, hipack_value_t *result, S)
 {
     hipack_string_t *hstr = NULL;
     uint32_t alloc_size = 0;
@@ -353,21 +353,19 @@ parse_string (P, S)
     }
 
     matchchar (p, '"', "unterminated string value", CHECK_OK);
-    return (hipack_value_t) {
-        .type = HIPACK_STRING,
-        .v_string = hstr ? hstr : hipack_string_new_from_lstring ("", 0)
-    };
+    result->type = HIPACK_STRING;
+    result->v_string = hstr ? hstr : hipack_string_new_from_lstring ("", 0);
+    return;
 
 error:
     hipack_string_free (hstr);
-    return DUMMY_VALUE;
+    return;
 }
 
 
-static hipack_value_t
-parse_list (P, S)
+static void
+parse_list (P, hipack_value_t *result, S)
 {
-    hipack_value_t value = DUMMY_VALUE;
     hipack_list_t *list = NULL;
     uint32_t alloc_size = 0;
     uint32_t size = 0;
@@ -376,10 +374,9 @@ parse_list (P, S)
     skipwhite (p, CHECK_OK);
 
     while (p->look != ']') {
-        value = parse_value (p, CHECK_OK);
+        hipack_value_t value = parse_value (p, CHECK_OK);
         list = list_resize (list, &alloc_size, size + 1);
         list->data[size++] = value;
-        value = DUMMY_VALUE;
 
         bool got_whitespace = is_hipack_whitespace (p->look);
         skipwhite (p, CHECK_OK);
@@ -394,65 +391,65 @@ parse_list (P, S)
     }
 
     matchchar (p, ']', "unterminated list value", CHECK_OK);
-    return (hipack_value_t) {
-        .type = HIPACK_LIST,
-        .v_list = list ? list : hipack_list_new (0),
-    };
+    result->type = HIPACK_LIST;
+    result->v_list = list;
+    return;
 
 error:
-    hipack_value_free (&value);
     hipack_list_free (list);
-    return DUMMY_VALUE;
+    return;
 }
 
 
-static hipack_value_t
-parse_dict (P, S)
+static void
+parse_dict (P, hipack_value_t *result, S)
 {
     hipack_dict_t *dict = hipack_dict_new ();
     matchchar (p, '{', NULL, CHECK_OK);
     skipwhite (p, CHECK_OK);
     parse_keyval_items (p, dict, '}', CHECK_OK);
     matchchar (p, '}', "unterminated dict value", CHECK_OK);
-    return (hipack_value_t) { .type = HIPACK_DICT, .v_dict = dict };
+    result->type = HIPACK_DICT;
+    result->v_dict = dict;
+    return;
 
 error:
     hipack_dict_free (dict);
-    return DUMMY_VALUE;
+    return;
 }
 
 
-static hipack_value_t
-parse_bool (P, S)
+static void
+parse_bool (P, hipack_value_t *result, S)
 {
+    result->type = HIPACK_BOOL;
     if (p->look == 'T' || p->look == 't') {
         nextchar (p, CHECK_OK);
         matchchar (p, 'r', NULL, CHECK_OK);
         matchchar (p, 'u', NULL, CHECK_OK);
         matchchar (p, 'e', NULL, CHECK_OK);
-        return (hipack_value_t) { .type = HIPACK_BOOL, .v_bool = true };
+        result->v_bool = true;
     } else if (p->look == 'F' || p->look == 'f') {
         nextchar (p, CHECK_OK);
         matchchar (p, 'a', NULL, CHECK_OK);
         matchchar (p, 'l', NULL, CHECK_OK);
         matchchar (p, 's', NULL, CHECK_OK);
         matchchar (p, 'e', NULL, CHECK_OK);
-        return (hipack_value_t) { .type = HIPACK_BOOL, .v_bool = false };
+        result->v_bool = false;
     }
+    return;
 
 error:
     p->error = "invalid boolean value";
-    return DUMMY_VALUE;
 }
 
 
-static hipack_value_t
-parse_number (P, S)
+static void
+parse_number (P, hipack_value_t *result, S)
 {
     hipack_string_t *hstr = NULL;
     uint32_t alloc_size = 0;
     uint32_t size = 0;
-    hipack_value_t result;
 
 #define SAVE_LOOK( ) \
     hstr = string_resize (hstr, &alloc_size, size + 1); \
@@ -532,21 +529,21 @@ parse_number (P, S)
         char *endptr = NULL;
         long v = strtol ((const char*) hstr->data, &endptr, 16);
         /* TODO: Check for overflow. */
-        result.type = HIPACK_INTEGER;
-        result.v_integer = (int32_t) v;
+        result->type = HIPACK_INTEGER;
+        result->v_integer = (int32_t) v;
     } else if (is_octal) {
         assert (!is_hex);
         assert (!exp_seen);
         assert (!dot_seen);
         long v = strtol ((const char*) hstr->data, &endptr, 8);
         /* TODO: Check for overflow. */
-        result.type = HIPACK_INTEGER;
-        result.v_integer = (int32_t) v;
+        result->type = HIPACK_INTEGER;
+        result->v_integer = (int32_t) v;
     } else if (dot_seen || exp_seen) {
         assert (!is_hex);
         assert (!is_octal);
-        result.type = HIPACK_FLOAT;
-        result.v_float = strtod ((const char*) hstr->data, &endptr);
+        result->type = HIPACK_FLOAT;
+        result->v_float = strtod ((const char*) hstr->data, &endptr);
     } else {
         assert (!is_hex);
         assert (!is_octal);
@@ -554,8 +551,8 @@ parse_number (P, S)
         assert (!dot_seen);
         long v = strtol ((const char*) hstr->data, &endptr, 10);
         /* TODO: Check for overflow. */
-        result.type = HIPACK_INTEGER;
-        result.v_integer = (int32_t) v;
+        result->type = HIPACK_INTEGER;
+        result->v_integer = (int32_t) v;
     }
 
     if (endptr && *endptr != '\0') {
@@ -564,12 +561,43 @@ parse_number (P, S)
     }
 
     hipack_string_free (hstr);
-    return result;
+    return;
 
 error:
     p->error = "invalid numeric value";
     hipack_string_free (hstr);
-    return DUMMY_VALUE;
+}
+
+
+static void
+parse_annotations (P, hipack_value_t *result, S)
+{
+    hipack_string_t *key = NULL;
+    while (p->look == ':') {
+        p->look = nextchar_raw (p, CHECK_OK);
+        key = parse_key (p, CHECK_OK);
+        skipwhite (p, CHECK_OK);
+
+        /* Check if the annotation is already in the set. */
+        if (result->annot && hipack_dict_get (result->annot, key)) {
+            p->error = "duplicate annotation";
+            *status = kStatusError;
+            goto error;
+        }
+        /* Add the annotation to the set. */
+        if (!result->annot)
+            result->annot = hipack_dict_new ();
+
+        static const hipack_value_t annot_present = {
+            .type   = HIPACK_BOOL,
+            .v_bool = true,
+        };
+        hipack_dict_set_adopt_key (result->annot, &key, &annot_present);
+    }
+
+error:
+    if (key)
+        hipack_string_free (key);
 }
 
 
@@ -578,33 +606,36 @@ parse_value (P, S)
 {
     hipack_value_t result = DUMMY_VALUE;
 
+    parse_annotations (p, &result, CHECK_OK);
+
     switch (p->look) {
         case '"': /* String */
-            result = parse_string (p, CHECK_OK);
+            parse_string (p, &result, CHECK_OK);
             break;
 
         case '[': /* List */
-            result = parse_list (p, CHECK_OK);
+            parse_list (p, &result, CHECK_OK);
             break;
 
         case '{': /* Dict */
-            result = parse_dict (p, CHECK_OK);
+            parse_dict (p, &result, CHECK_OK);
             break;
 
         case 'T': /* Bool */
         case 't':
         case 'F':
         case 'f':
-            result = parse_bool (p, CHECK_OK);
+            parse_bool (p, &result, CHECK_OK);
             break;
 
         default: /* Integer or Float */
-            result = parse_number (p, CHECK_OK);
+            parse_number (p, &result, CHECK_OK);
             break;
     }
 
 error:
-    return result;
+    hipack_value_free (&result);
+    return DUMMY_VALUE;
 }
 
 
@@ -627,8 +658,7 @@ parse_keyval_items (P, hipack_dict_t *result, int eos, S)
         if (is_hipack_whitespace (p->look)) {
             got_separator = true;
             skipwhite (p, CHECK_OK);
-        }
-        switch (p->look) {
+        } else switch (p->look) {
             case ':':
                 nextchar (p, CHECK_OK);
                 skipwhite (p, CHECK_OK);

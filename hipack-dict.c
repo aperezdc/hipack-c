@@ -204,6 +204,33 @@ hipack_dict_get (const hipack_dict_t   *dict,
 }
 
 
+void
+hipack_dict_del (hipack_dict_t         *dict,
+                 const hipack_string_t *key)
+{
+    assert (dict);
+    assert (key);
+
+    uint32_t hash_val = hipack_string_hash (key) % dict->size;
+    for (hipack_dict_node_t *node = dict->nodes[hash_val]; node; node = node->next) {
+        if (hipack_string_equal (node->key, key)) {
+            hipack_dict_node_t *prev_node = node->prev_node;
+            hipack_dict_node_t *next_node = node->next_node;
+
+            if (prev_node) prev_node->next_node = next_node;
+            else dict->first = next_node;
+            if (next_node) next_node->prev_node = prev_node;
+
+            dict->nodes[hash_val] = node->next;
+            dict->count--;
+
+            free_node (node);
+            return;
+        }
+    }
+}
+
+
 hipack_value_t*
 hipack_dict_first (const hipack_dict_t    *dict,
                    const hipack_string_t **key)

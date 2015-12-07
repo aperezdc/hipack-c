@@ -61,7 +61,8 @@ typedef struct hipack_list      hipack_list_t;
 
 
 struct hipack_value {
-    hipack_type_t type;
+    hipack_type_t  type;
+    hipack_dict_t *annot;
     union {
         int32_t          v_integer;
         double           v_float;
@@ -141,6 +142,9 @@ extern void hipack_dict_set (hipack_dict_t         *dict,
                              const hipack_string_t *key,
                              const hipack_value_t  *value);
 
+extern void hipack_dict_del (hipack_dict_t         *dict,
+                             const hipack_string_t *key);
+
 extern hipack_value_t* hipack_dict_get (const hipack_dict_t   *dict,
                                         const hipack_string_t *key);
 
@@ -197,6 +201,9 @@ hipack_value_free (hipack_value_t *value)
 {
     assert (value);
 
+    if (value->annot)
+        hipack_dict_free (value->annot);
+
     switch (value->type) {
         case HIPACK_INTEGER:
         case HIPACK_FLOAT:
@@ -216,6 +223,50 @@ hipack_value_free (hipack_value_t *value)
             hipack_dict_free (value->v_dict);
             break;
     }
+}
+
+
+static inline void
+hipack_value_add_annot (hipack_value_t *value,
+                        const char     *annot)
+{
+    assert (value);
+    assert (annot);
+
+    if (!value->annot) {
+        value->annot = hipack_dict_new ();
+    }
+
+    static const hipack_value_t bool_true = {
+        .type   = HIPACK_BOOL,
+        .v_bool = true,
+    };
+    hipack_string_t *key = hipack_string_new_from_string (annot);
+    hipack_dict_set_adopt_key (value->annot, &key, &bool_true);
+}
+
+static inline bool
+hipack_value_has_annot (const hipack_value_t *value,
+                        const char           *annot)
+{
+    assert (value);
+    assert (annot);
+
+    /* TODO: Try to avoid the string copy. */
+    hipack_string_t *key = hipack_string_new_from_string (annot);
+    bool result = (value->annot) && hipack_dict_get (value->annot, key);
+    hipack_string_free (key);
+    return result;
+}
+
+static inline void
+hipack_value_del_annot (hipack_value_t *value,
+                        const char     *annot)
+{
+    assert (value);
+    assert (annot);
+
+    hipack_string_t *key = hipack_string_new_from_string (annot);
 }
 
 
