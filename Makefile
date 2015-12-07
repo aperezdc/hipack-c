@@ -20,7 +20,7 @@ hipack-clean:
 
 ${hipack_OBJS}: ${hipack_PATH}/hipack.h
 ${hipack}: ${hipack_OBJS}
-	${AR} rcu ${hipack} ${hipack_OBJS}
+	${AR} rc ${hipack} ${hipack_OBJS}
 
 hipack-tools: \
 	${hipack_PATH}/tools/hipack-cat \
