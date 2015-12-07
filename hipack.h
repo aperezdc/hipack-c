@@ -266,7 +266,10 @@ hipack_value_del_annot (hipack_value_t *value,
     assert (value);
     assert (annot);
 
-    hipack_string_t *key = hipack_string_new_from_string (annot);
+    if (value->annot) {
+        hipack_string_t *key = hipack_string_new_from_string (annot);
+        hipack_dict_del (value->annot, key);
+    }
 }
 
 
