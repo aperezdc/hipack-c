@@ -632,6 +632,7 @@ parse_value (P, S)
             parse_number (p, &result, CHECK_OK);
             break;
     }
+    return result;
 
 error:
     hipack_value_free (&result);
