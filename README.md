@@ -8,7 +8,9 @@ Implementation of the [HiPack](http://hipack.org) serialization format C.
 Features:
 
 * Reference implementation of the [current stable HiPack
-  specification](https://github.com/aperezdc/hipack/blob/gh-pages/spec.rst).
+  specification](https://github.com/aperezdc/hipack/blob/gh-pages/spec.rst),
+  plus the following HEPs:
+  - [HEP-1: Value Annotations](https://github.com/aperezdc/hipack/blob/gh-pages/heps/hep-001.rst)
 * Straightforward implementation.
 * Written in portable C99.
 * Minimal dependencies.
