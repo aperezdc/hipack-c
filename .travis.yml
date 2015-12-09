@@ -14,6 +14,9 @@ matrix:
     exclude:
         - env: ASAN=true
           compiler: gcc
+cache:
+    directories:
+        - -$HOME/.cache/pip
 install:
     - $COVERAGE && pip install cpp-coveralls || true
 script:
