@@ -52,6 +52,36 @@ static void parse_keyval_items (P, hipack_dict_t *result, int eos, S);
 
 
 static inline bool
+string_to_intrinsic_annot (const hipack_string_t *hstr, hipack_type_t *type)
+{
+    assert (type);
+
+    static const struct {
+        const char * const str;
+        int                type;
+    } annots[] = {
+        { ".int",    HIPACK_INTEGER },
+        { ".float",  HIPACK_FLOAT   },
+        { ".bool",   HIPACK_BOOL    },
+        { ".string", HIPACK_STRING  },
+        { ".list",   HIPACK_LIST    },
+        { ".dict",   HIPACK_DICT    },
+    };
+
+    if (hstr->size < 4)
+        return false;
+
+    for (uint8_t i = 0; i < sizeof (annots) / sizeof (annots[0]); i++) {
+        if (strncmp (annots[i].str, (const char*) hstr->data, hstr->size) == 0) {
+            *type = annots[i].type;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+static inline bool
 is_hipack_whitespace (int ch)
 {
     switch (ch) {
@@ -569,35 +599,57 @@ error:
 }
 
 
-static void
+static bool
 parse_annotations (P, hipack_value_t *result, S)
 {
     hipack_string_t *key = NULL;
+    bool type_annot = false;
+
     while (p->look == ':') {
         p->look = nextchar_raw (p, CHECK_OK);
         key = parse_key (p, CHECK_OK);
-        skipwhite (p, CHECK_OK);
+        skipwhite (p, CHECK_OK); /* TODO: Move after checking duplicates. */
 
-        /* Check if the annotation is already in the set. */
-        if (result->annot && hipack_dict_get (result->annot, key)) {
-            p->error = "duplicate annotation";
-            *status = kStatusError;
-            goto error;
+        /* Check for intrinsic type annotations. */
+        assert (key->size > 0);
+        if (key->data[0] == '.') {
+            hipack_type_t annot_type;
+            bool found = string_to_intrinsic_annot (key, &annot_type);
+            if (found) {
+                if (type_annot && annot_type != result->type) {
+                    p->error = "multiple intrinsic type annotations";
+                    goto error;
+                }
+                result->type = annot_type;
+                type_annot = true;
+            } else {
+                p->error = "invalid intrinsic annotation";
+                goto error;
+            }
+        } else {
+            /* Check if the annotation is already in the set. */
+            if (result->annot && hipack_dict_get (result->annot, key)) {
+                p->error = "duplicate annotation";
+                goto error;
+            }
+            /* Add the annotation to the set. */
+            if (!result->annot)
+                result->annot = hipack_dict_new ();
+
+            static const hipack_value_t annot_present = {
+                .type   = HIPACK_BOOL,
+                .v_bool = true,
+            };
+            hipack_dict_set_adopt_key (result->annot, &key, &annot_present);
         }
-        /* Add the annotation to the set. */
-        if (!result->annot)
-            result->annot = hipack_dict_new ();
-
-        static const hipack_value_t annot_present = {
-            .type   = HIPACK_BOOL,
-            .v_bool = true,
-        };
-        hipack_dict_set_adopt_key (result->annot, &key, &annot_present);
     }
+    return type_annot;
 
 error:
     if (key)
         hipack_string_free (key);
+    *status = kStatusError;
+    return false;
 }
 
 
@@ -606,7 +658,8 @@ parse_value (P, S)
 {
     hipack_value_t result = DUMMY_VALUE;
 
-    parse_annotations (p, &result, CHECK_OK);
+    bool type_annot = parse_annotations (p, &result, CHECK_OK);
+    const hipack_type_t expected_type = result.type;
 
     switch (p->look) {
         case '"': /* String */
@@ -632,6 +685,13 @@ parse_value (P, S)
             parse_number (p, &result, CHECK_OK);
             break;
     }
+
+    if (type_annot && expected_type != result.type) {
+        p->error = "annotated type does not match value type";
+        *status = kStatusError;
+        goto error;
+    }
+
     return result;
 
 error:
