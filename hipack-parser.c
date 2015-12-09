@@ -392,7 +392,7 @@ parse_list (P, hipack_value_t *result, S)
 
     matchchar (p, ']', "unterminated list value", CHECK_OK);
     result->type = HIPACK_LIST;
-    result->v_list = list;
+    result->v_list = list ? list : hipack_list_new (0);
     return;
 
 error:
