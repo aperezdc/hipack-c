@@ -222,23 +222,30 @@ write_keyval (hipack_writer_t     *writer,
             CHECK_IO (writechar (writer, key->data[i]));
         }
 
-        switch (value->type) {
-            case HIPACK_INTEGER:
-            case HIPACK_FLOAT:
-            case HIPACK_BOOL:
-            case HIPACK_STRING:
+        if (value->annot) {
+            if (writer->indent == HIPACK_WRITER_COMPACT) {
                 CHECK_IO (writechar (writer, ':'));
-                break;
-            case HIPACK_DICT:
-            case HIPACK_LIST:
-                /* No colon. */
-                break;
-            default:
-                assert (false);
-        }
-
-        if (writer->indent != HIPACK_WRITER_COMPACT) {
-            CHECK_IO (writechar (writer, ' '));
+            } else {
+                CHECK_IO (writechar (writer, ' '));
+            }
+        } else {
+            switch (value->type) {
+                case HIPACK_INTEGER:
+                case HIPACK_FLOAT:
+                case HIPACK_BOOL:
+                case HIPACK_STRING:
+                    CHECK_IO (writechar (writer, ':'));
+                    break;
+                case HIPACK_DICT:
+                case HIPACK_LIST:
+                    /* No colon. */
+                    break;
+                default:
+                    assert (false);
+            }
+            if (writer->indent != HIPACK_WRITER_COMPACT) {
+                CHECK_IO (writechar (writer, ' '));
+            }
         }
 
         CHECK_IO (hipack_write_value (writer, value));
@@ -314,6 +321,18 @@ hipack_write_value (hipack_writer_t      *writer,
 {
     assert (writer);
     assert (value);
+
+    if (value->annot) {
+        const hipack_string_t *key;
+        hipack_value_t *dummy_value;
+        HIPACK_DICT_FOREACH (value->annot, key, dummy_value) {
+            CHECK_IO (writechar (writer, ':'));
+            for (uint32_t i = 0; i < key->size; i++) {
+                CHECK_IO (writechar (writer, key->data[i]));
+            }
+        }
+        CHECK_IO (writechar (writer, ' '));
+    }
 
     switch (value->type) {
         case HIPACK_INTEGER:
