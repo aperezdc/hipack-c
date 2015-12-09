@@ -1,3 +1,4 @@
+sudo: false
 language: c
 compiler:
     - clang
@@ -14,7 +15,7 @@ matrix:
         - env: ASAN=true
           compiler: gcc
 install:
-    - $COVERAGE && sudo pip install cpp-coveralls || true
+    - $COVERAGE && pip install cpp-coveralls || true
 script:
     - $COVERAGE && export CC="${CC} -fprofile-arcs -ftest-coverage -O0 -g" || true
     - $ASAN && export CC='clang -O1 -fsanitize=address -g -fno-omit-frame-pointer' || true
