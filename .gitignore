@@ -3,7 +3,8 @@
 .*.sw[op]
 *.gcda
 *.gcno
-tools/hipack-cat
-tools/hipack-get
-tools/hipack-parse
-tools/hipack-roundtrip
+/tools/hipack-cat
+/tools/hipack-get
+/tools/hipack-parse
+/tools/hipack-roundtrip
+/doc/_build/

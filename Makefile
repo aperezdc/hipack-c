@@ -49,4 +49,10 @@ ${hipack_PATH}/fpconv/src/fpconv.c: ${hipack_PATH}/.gitmodules
 	cd ${hipack_PATH} && git submodule update fpconv
 	touch $@
 
-.PHONY: hipack hipack-objs hipack-tools hipack-check
+${hipack_PATH}/doc/apiref.rst: ${hipack_PATH}/hipack.h ${hipack_PATH}/tools/extract-docs.awk
+	awk -f ${hipack_PATH}/tools/extract-docs.awk $< > $@
+
+doc: ${hipack_PATH}/doc/apiref.rst
+	${MAKE} -C ${hipack_PATH}/doc html
+
+.PHONY: hipack hipack-objs hipack-tools hipack-check doc
