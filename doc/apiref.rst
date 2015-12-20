@@ -192,6 +192,8 @@ List Functions
 
 
 
+.. _dict_funcs:
+
 Dictionary Functions
 ====================
 

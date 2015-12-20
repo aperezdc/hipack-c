@@ -292,6 +292,8 @@ hipack_list_size (const hipack_list_t *list)
 
 
 /**
+ * .. _dict_funcs:
+ *
  * Dictionary Functions
  * ====================
  */
