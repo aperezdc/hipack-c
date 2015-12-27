@@ -307,6 +307,30 @@ Value Functions
 
    Obtains the type of a value.
 
+.. c:function:: hipack_value_t hipack_integer (int32_t value)
+
+   Creates a new integer value.
+
+.. c:function:: hipack_value_t hipack_float (double value)
+
+   Creates a new floating point value.
+
+.. c:function:: hipack_value_t hipack_bool (bool value)
+
+   Creates a new boolean value.
+
+.. c:function:: hipack_value_t hipack_string (hipack_string_t *value)
+
+   Creates a new string value.
+
+.. c:function:: hipack_value_t hipack_list (hipack_list_t *value)
+
+   Creates a new list value.
+
+.. c:function:: hipack_value_t hipack_dict (hipack_dict_t *value)
+
+   Creates a new dictionary value.
+
 .. c:function:: bool hipack_value_is_integer (const hipack_value_t *value)
 
    Checks whether a value is an integer.

@@ -441,6 +441,25 @@ hipack_value_type (const hipack_value_t *value)
     return value->type;
 }
 
+/*~f hipack_value_t hipack_integer (int32_t value)
+ * Creates a new integer value.
+ */
+/*~f hipack_value_t hipack_float (double value)
+ * Creates a new floating point value.
+ */
+/*~f hipack_value_t hipack_bool (bool value)
+ * Creates a new boolean value.
+ */
+/*~f hipack_value_t hipack_string (hipack_string_t *value)
+ * Creates a new string value.
+ */
+/*~f hipack_value_t hipack_list (hipack_list_t *value)
+ * Creates a new list value.
+ */
+/*~f hipack_value_t hipack_dict (hipack_dict_t *value)
+ * Creates a new dictionary value.
+ */
+
 /*~f bool hipack_value_is_integer (const hipack_value_t *value)
  * Checks whether a value is an integer.
  */
@@ -500,11 +519,19 @@ hipack_value_type (const hipack_value_t *value)
         return value->v_ ## name;                             \
     }
 
+#define HIPACK_DEFINE_MAKE_VALUE(_type, name, type_tag)      \
+    static inline hipack_value_t                             \
+    hipack_ ## name (_type value) {                          \
+        hipack_value_t v = { type_tag, NULL, { value } };    \
+        return v;                                            \
+    }
+
 HIPACK_TYPES (HIPACK_DEFINE_IS_TYPE)
 HIPACK_TYPES (HIPACK_DEFINE_GET_VALUE)
 
 #undef HIPACK_DEFINE_IS_TYPE
 #undef HIPACK_DEFINE_GET_VALUE
+#undef HIPACK_DEFINE_MAKE_VALUE
 
 
 /*~f bool hipack_value_equal (const hipack_value_t *a, const hipack_value_t *b)
