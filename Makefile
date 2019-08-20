@@ -41,7 +41,7 @@ ${hipack_PATH}/tools/hipack-roundtrip: \
 	${hipack_PATH}/tools/hipack-roundtrip.o ${hipack}
 
 hipack-check: hipack-tools
-	@${hipack_PATH}/tools/run-tests
+	@bash --norc ${hipack_PATH}/tools/run-tests
 
 ${hipack_PATH}/hipack-writer.o: ${hipack_PATH}/fpconv/src/fpconv.c
 ${hipack_PATH}/fpconv/src/fpconv.c: ${hipack_PATH}/.gitmodules

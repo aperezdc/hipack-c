@@ -11,9 +11,11 @@
 #include <errno.h>
 
 
+#if !defined(__OpenBSD__)
 /* Make sure that strtonum() is defined as "static". */
 static long long strtonum (const char*, long long, long long, const char**);
 #include "strtonum.c"
+#endif /* !__OpenBSD__ */
 
 
 int
