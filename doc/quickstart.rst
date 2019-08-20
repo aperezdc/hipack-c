@@ -16,7 +16,7 @@ like the following::
     title: "Quickstart"
     is-documentation? True
 
-First of all, we need to include the ``hipack.h`` header in the source of our
+First, we need to include the ``hipack.h`` header in the source of our
 program, and then use a :c:func:`hipack_read()` to parse it. In this example
 we use the :c:func:`hipack_stdio_getchar()` function included in the library
 which is used to read data from a ``FILE*``:
@@ -58,7 +58,7 @@ prints the value of the ``title`` element:
        hipack_string_free (key); // Free memory used by "key".
    }
 
-Note how objects cretated by us, like the ``key`` string, have to be freed
+Note how objects created by us, like the ``key`` string, have to be freed
 by us. In general, the user of the library is responsible for freeing any
 objects created by them. On the other hand, objects allocated by the library
 are freed by library functions.
@@ -79,7 +79,7 @@ well.
 Values
 ======
 
-Objects of :c:type:`hipack_value_t` represent a single value of those
+Objects of type :c:type:`hipack_value_t` represent a single value of those
 supported by HiPack: an integer number, a floating point number, a boolean,
 a list, or a dictionary. Creating an object if a “basic” value, that is all
 except lists and dictionary, can be done using the C99 designated initializer
@@ -128,7 +128,7 @@ freed when the values are not used anymore:
 
 For convenience, a :c:func:`hipack_value_free()` function which will ensure
 the memory allocated by values referenced by a :c:type:`hipack_value_t` will
-be freed properly. This way, one can write code in which the the value objects
+be freed properly. This way, one can write code in which the value objects
 (:c:type:`hipack_value_t`) are considered to be the owners of the memory which
 has been dynamically allocated:
 
@@ -137,7 +137,7 @@ has been dynamically allocated:
    // Ownership of the hipack_string_t is passed to "str_val"
    hipack_value_t str_val =
        hipack_string (hipack_string_new_from_string ("spam"));
-   // ...
+   // …
    hipack_value_free (&str_val);  // Free memory.
 
 This behaviour is particularly handy when assembling complex values: all items
