@@ -9,3 +9,5 @@
 /tools/hipack-roundtrip
 /tools/hipack-test-api
 /doc/_build/
+/.cache/
+/compile_commands.json
