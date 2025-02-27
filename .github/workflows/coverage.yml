@@ -1,0 +1,38 @@
+---
+name: Coverage
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+        persist-credentials: false
+    - name: Install Tools
+      run: pip install cpp-coveralls
+    - name: Gather Coverage
+      run: >
+        make -j$(nproc)
+        CC="${CC:-gcc} -fprofile-arcs -ftest-coverage -O0 -g"
+        hipack-check
+    - name: Submit
+      uses: threeal/gcovr-action@v1
+      with:
+        coveralls-send: true
+        excludes: |
+          fpconv
+          test
+          tools
