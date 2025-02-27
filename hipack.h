@@ -519,15 +519,16 @@ hipack_value_type (const hipack_value_t *value)
         return value->v_ ## name;                             \
     }
 
-#define HIPACK_DEFINE_MAKE_VALUE(_type, name, type_tag)      \
-    static inline hipack_value_t                             \
-    hipack_ ## name (_type value) {                          \
-        hipack_value_t v = { type_tag, NULL, { value } };    \
-        return v;                                            \
+#define HIPACK_DEFINE_MAKE_VALUE(_type, name, type_tag)                 \
+    static inline hipack_value_t                                        \
+    hipack_ ## name (_type value) {                                     \
+        hipack_value_t v = { type_tag, NULL, { .v_ ## name = value } }; \
+        return v;                                                       \
     }
 
 HIPACK_TYPES (HIPACK_DEFINE_IS_TYPE)
 HIPACK_TYPES (HIPACK_DEFINE_GET_VALUE)
+HIPACK_TYPES (HIPACK_DEFINE_MAKE_VALUE)
 
 #undef HIPACK_DEFINE_IS_TYPE
 #undef HIPACK_DEFINE_GET_VALUE
