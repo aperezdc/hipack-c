@@ -16,7 +16,8 @@ hipack-clean:
 		${hipack_PATH}/tools/hipack-cat \
 		${hipack_PATH}/tools/hipack-get \
 		${hipack_PATH}/tools/hipack-parse \
-		${hipack_PATH}/tools/hipack-roundtrip
+		${hipack_PATH}/tools/hipack-roundtrip \
+		${hipack_PATH}/tools/hipack-test-api
 
 ${hipack_OBJS}: ${hipack_PATH}/hipack.h
 ${hipack}: ${hipack_OBJS}
@@ -26,7 +27,8 @@ hipack-tools: \
 	${hipack_PATH}/tools/hipack-cat \
 	${hipack_PATH}/tools/hipack-get \
 	${hipack_PATH}/tools/hipack-parse \
-	${hipack_PATH}/tools/hipack-roundtrip
+	${hipack_PATH}/tools/hipack-roundtrip \
+	${hipack_PATH}/tools/hipack-test-api
 
 ${hipack_PATH}/tools/hipack-cat: \
 	${hipack_PATH}/tools/hipack-cat.o ${hipack}
@@ -40,7 +42,11 @@ ${hipack_PATH}/tools/hipack-parse: \
 ${hipack_PATH}/tools/hipack-roundtrip: \
 	${hipack_PATH}/tools/hipack-roundtrip.o ${hipack}
 
+${hipack_PATH}/tools/hipack-test-api: \
+	${hipack_PATH}/tools/hipack-test-api.o ${hipack}
+
 hipack-check: hipack-tools
+	@${hipack_PATH}/tools/hipack-test-api
 	@bash --norc ${hipack_PATH}/tools/run-tests
 
 ${hipack_PATH}/hipack-writer.o: ${hipack_PATH}/fpconv/src/fpconv.c

@@ -7,4 +7,5 @@
 /tools/hipack-get
 /tools/hipack-parse
 /tools/hipack-roundtrip
+/tools/hipack-test-api
 /doc/_build/
