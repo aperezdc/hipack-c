@@ -55,4 +55,4 @@ ${hipack_PATH}/doc/apiref.rst: ${hipack_PATH}/hipack.h ${hipack_PATH}/tools/extr
 doc: ${hipack_PATH}/doc/apiref.rst
 	${MAKE} -C ${hipack_PATH}/doc html
 
-.PHONY: hipack hipack-objs hipack-tools hipack-check doc
+.PHONY: hipack hipack-objs hipack-tools hipack-check hipack-clean doc
