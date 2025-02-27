@@ -27,6 +27,8 @@ check_log_failure(const char *file, unsigned line, const char *func, const char 
 			return check_log_failure(__FILE__, __LINE__, __func__, "check failed: " #expr); \
 	} while (false)
 
+#define cleanup(kind) __attribute__((cleanup(cleanup_ ## kind)))
+
 static inline void
 cleanup_value(hipack_value_t *valp)
 {
@@ -36,13 +38,13 @@ cleanup_value(hipack_value_t *valp)
 
 TEST(value_equal)
 {
-	hipack_value_t a [[gnu::cleanup(cleanup_value)]] = hipack_integer(42);
-	hipack_value_t b [[gnu::cleanup(cleanup_value)]] = hipack_integer(32);
-	hipack_value_t c [[gnu::cleanup(cleanup_value)]] = hipack_string(hipack_string_new_from_string("Hi there!"));
-	hipack_value_t d [[gnu::cleanup(cleanup_value)]] = hipack_float(3.14);
-	hipack_value_t e [[gnu::cleanup(cleanup_value)]] = hipack_dict(hipack_dict_new());
-	hipack_value_t f [[gnu::cleanup(cleanup_value)]] = hipack_list(hipack_list_new(0));
-	hipack_value_t g [[gnu::cleanup(cleanup_value)]] = hipack_list(hipack_list_new(0));
+	hipack_value_t a cleanup(value) = hipack_integer(42);
+	hipack_value_t b cleanup(value) = hipack_integer(32);
+	hipack_value_t c cleanup(value) = hipack_string(hipack_string_new_from_string("Hi there!"));
+	hipack_value_t d cleanup(value) = hipack_float(3.14);
+	hipack_value_t e cleanup(value) = hipack_dict(hipack_dict_new());
+	hipack_value_t f cleanup(value) = hipack_list(hipack_list_new(0));
+	hipack_value_t g cleanup(value) = hipack_list(hipack_list_new(0));
 
 	check(hipack_value_equal(&a, &a));
 	check(hipack_value_equal(&b, &b));
@@ -67,10 +69,10 @@ TEST(list_equal)
 	hipack_list_t *l3 = hipack_list_new(3);
 	hipack_list_t *lI = hipack_list_new(1);
 
-	hipack_value_t v0 [[gnu::cleanup(cleanup_value)]] = hipack_list(l0);
-	hipack_value_t v1 [[gnu::cleanup(cleanup_value)]] = hipack_list(l1);
-	hipack_value_t v3 [[gnu::cleanup(cleanup_value)]] = hipack_list(l3);
-	hipack_value_t vI [[gnu::cleanup(cleanup_value)]] = hipack_list(lI);
+	hipack_value_t v0 cleanup(value) = hipack_list(l0);
+	hipack_value_t v1 cleanup(value) = hipack_list(l1);
+	hipack_value_t v3 cleanup(value) = hipack_list(l3);
+	hipack_value_t vI cleanup(value) = hipack_list(lI);
 
 	*HIPACK_LIST_AT(l1, 0) = hipack_integer(22);
 	*HIPACK_LIST_AT(lI, 0) = hipack_integer(22);
