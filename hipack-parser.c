@@ -486,10 +486,8 @@ parse_number (P, hipack_value_t *result, S)
     hstr->data[size++] = p->look
 
     /* Optional sign. */
-    bool has_sign = false;
     if (p->look == '-' || p->look == '+') {
         SAVE_LOOK ();
-        has_sign = true;
         nextchar (p, CHECK_OK);
     }
 
